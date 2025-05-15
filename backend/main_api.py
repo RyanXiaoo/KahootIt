@@ -67,12 +67,15 @@ async def create_quiz_from_upload(
             raise HTTPException(status_code=422, detail="Could not generate questions from the PDF.")
 
         # Create Quiz record in DB
-        db_quiz = models.Quiz(pdf_filename=file.filename) # Add other fields like start/end page if modeled
+        db_quiz = models.Quiz(pdf_filename=file.filename)
         db.add(db_quiz)
+        print(f"Attempting to commit quiz for {file.filename}...")
         db.commit() # Commit to get the quiz ID
+        print(f"Quiz committed. Quiz ID from DB: {db_quiz.id}, Created at: {db_quiz.created_at}")
         db.refresh(db_quiz) # Refresh to get the auto-generated ID and created_at
 
         # Create Question records in DB, associated with the Quiz
+        print(f"Attempting to add {len(generated_question_data)} questions for Quiz ID {db_quiz.id}...")
         for q_data in generated_question_data:
             db_question = models.Question(
                 quiz_id=db_quiz.id,
@@ -82,9 +85,9 @@ async def create_quiz_from_upload(
                 explanation=q_data["explanation"]
             )
             db.add(db_question)
+        print(f"Attempting to commit {len(generated_question_data)} questions...")
         db.commit() # Commit all questions for this quiz
-
-        print(f"Generated {len(generated_question_data)} questions. Quiz ID (DB): {db_quiz.id}")
+        print(f"Questions committed for Quiz ID {db_quiz.id}.")
 
         return {
             "message": "PDF processed and quiz generated successfully!",
