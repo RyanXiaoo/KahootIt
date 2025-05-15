@@ -13,45 +13,53 @@ load_dotenv()
 # which should be loaded from your .env file.
 client = OpenAI()
 
-def extract_text_from_pdf(pdf_path: str, start_page: int | None = None, end_page: int | None = None) -> str:
-    """Extracts text from a given PDF file, optionally from a specific page range (1-indexed)."""
+def _extract_text_from_doc(doc: fitz.Document, start_page: int | None = None, end_page: int | None = None) -> str:
+    """Extracts text from a given fitz.Document object, optionally from a specific page range (1-indexed)."""
     text = ""
+    
+    actual_start_page = 0
+    if start_page is not None and start_page > 0:
+        actual_start_page = start_page - 1 # Convert 1-indexed to 0-indexed
+    
+    actual_end_page = len(doc) # Default to all pages
+    if end_page is not None and end_page > actual_start_page and end_page <= len(doc):
+        # User's end_page is 1-indexed, fitz len(doc) is count.
+        # For range, if user says page 5 (0-indexed 4), we want to include it.
+        # So range should go up to end_page (which is exclusive for range).
+        actual_end_page = end_page 
+
+    if actual_start_page >= len(doc):
+        print(f"Warning: Start page ({start_page}) is beyond the document length ({len(doc)} pages).")
+        return ""
+    
+    if start_page is not None and end_page is not None and actual_start_page >= actual_end_page:
+        print(f"Warning: End page ({end_page}) must be greater than start page ({start_page}). Processing only start page if it's valid.")
+        if actual_start_page < len(doc):
+            actual_end_page = actual_start_page + 1
+        else:
+            return "" # Start page itself is out of bounds
+
+    print(f"Extracting text from page {actual_start_page + 1} to {actual_end_page} (inclusive, 1-indexed). Total pages in PDF: {len(doc)}")
+
+    for page_num in range(actual_start_page, actual_end_page):
+        if page_num < len(doc):
+            page = doc.load_page(page_num)
+            text += page.get_text()
+        else:
+            print(f"Warning: Attempted to load page {page_num + 1}, which is out of bounds.")
+            break
+    return text
+
+def extract_text_from_pdf_path(pdf_path: str, start_page: int | None = None, end_page: int | None = None) -> str:
+    """Extracts text from a PDF file path, optionally from a specific page range (1-indexed)."""
     try:
         doc = fitz.open(pdf_path)
-        
-        actual_start_page = 0
-        if start_page is not None and start_page > 0:
-            actual_start_page = start_page - 1 # Convert 1-indexed to 0-indexed
-        
-        actual_end_page = len(doc) # Default to all pages
-        if end_page is not None and end_page >= actual_start_page and end_page <= len(doc):
-            actual_end_page = end_page # User's end_page is 1-indexed, fitz len(doc) is count
-
-        if actual_start_page >= len(doc):
-            print(f"Warning: Start page ({start_page}) is beyond the document length ({len(doc)} pages).")
-            doc.close()
-            return ""
-        
-        # Ensure end_page is not less than start_page after conversion
-        if actual_start_page >= actual_end_page and start_page is not None and end_page is not None:
-            print(f"Warning: End page ({end_page}) must be greater than or equal to start page ({start_page}). Processing only start page.")
-            # Process only the start page if end_page is invalid relative to start_page
-            actual_end_page = actual_start_page + 1 
-
-        print(f"Extracting text from page {actual_start_page + 1} to {actual_end_page} (inclusive, 1-indexed). Total pages in PDF: {len(doc)}")
-
-        for page_num in range(actual_start_page, actual_end_page):
-            if page_num < len(doc): # Double check to prevent going out of bounds
-                page = doc.load_page(page_num)
-                text += page.get_text()
-            else:
-                print(f"Warning: Attempted to load page {page_num + 1}, which is out of bounds.")
-                break
+        text = _extract_text_from_doc(doc, start_page, end_page)
         doc.close()
+        return text
     except Exception as e:
-        print(f"Error opening or reading PDF: {e}")
+        print(f"Error opening or reading PDF from path '{pdf_path}': {e}")
         return ""
-    return text
 
 def chunk_text(text: str, chunk_size: int = 750, overlap: int = 100) -> list[str]:
     """Splits text into manageable chunks with a specified word count and overlap."""
@@ -184,8 +192,56 @@ The output must be a single JSON object with a "questions" key, where the value 
         print(f"An unexpected error occurred while generating questions: {e}")
         return []
 
+def generate_quiz_from_pdf_stream(
+    pdf_bytes: bytes, 
+    filename: str, # For logging/context
+    start_page: int | None = None, 
+    end_page: int | None = None, 
+    questions_per_chunk: int = 3, 
+    max_total_questions: int = 10
+) -> list[dict]:
+    """Processes a PDF from a byte stream, generates questions based on page range and parameters."""
+    all_generated_questions = []
+    try:
+        doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+    except Exception as e:
+        print(f"Error opening PDF stream for '{filename}': {e}")
+        return []
+
+    print(f"Processing PDF: {filename}")
+    full_text = _extract_text_from_doc(doc, start_page, end_page)
+    doc.close()
+
+    if not full_text:
+        print(f"No text extracted from '{filename}' based on the specified page range.")
+        return []
+    
+    print(f"Successfully extracted {len(full_text)} characters from '{filename}'.")
+
+    text_chunks = chunk_text(full_text, chunk_size=750, overlap=100) # Assuming chunk_text is defined elsewhere or pasted here
+    print(f"Text from '{filename}' divided into {len(text_chunks)} chunks.")
+
+    for i, chunk in enumerate(text_chunks):
+        if len(all_generated_questions) >= max_total_questions:
+            print(f"Reached maximum of {max_total_questions} questions for '{filename}'. Stopping.")
+            break
+        print(f"\nProcessing chunk {i+1}/{len(text_chunks)} for '{filename}'...")
+        # Assuming generate_questions_from_chunk is defined elsewhere or pasted here
+        questions = generate_questions_from_chunk(chunk, num_questions=questions_per_chunk)
+        all_generated_questions.extend(questions)
+        if len(all_generated_questions) >= max_total_questions:
+            all_generated_questions = all_generated_questions[:max_total_questions]
+            print(f"Reached maximum of {max_total_questions} questions with this chunk for '{filename}'. Stopping.")
+            break
+    
+    print(f"Finished generating {len(all_generated_questions)} questions for '{filename}'.")
+    return all_generated_questions
+
 def main(full_text: str):
-    """Main function to process PDF and generate questions."""
+    """Main function to process PDF and generate questions (primarily for CLI use if any)."""
+    # This function remains largely as it was for CLI, but now full_text is an argument.
+    # The API will use generate_quiz_from_pdf_stream directly.
+
     openai_api_key = os.getenv("OPENAI_API_KEY")
 
     if not openai_api_key:
@@ -193,44 +249,30 @@ def main(full_text: str):
         print("Please ensure it is set in your .env file (e.g., OPENAI_API_KEY='your_key') or as an environment variable.")
         return
     
-    # With OpenAI library v1.x.x, the API key is typically configured when initializing the client,
-    # or it's picked up automatically from the environment variable OPENAI_API_KEY.
-    # So, explicitly setting openai.api_key is no longer needed here if client is initialized globally.
-    # client = OpenAI(api_key=openai_api_key) # This would be an option if not relying on env var for client
+    # pdf_file_path = "STAT 230 Course Notes (Spring 2025 Edition).pdf" # No longer needed here if full_text is passed
+    max_questions_total = 10 # Default for CLI, can be overridden if params are added to main
+    questions_per_chunk_cli = 3 # Default for CLI
 
-    pdf_file_path = "STAT 230 Course Notes (Spring 2025 Edition).pdf" # Replace with your PDF file path
-    # ------------ NEW: Specify Page Range (1-indexed) ------------
-    # Set to None to process all pages, or specify start and end page numbers.
-    # Example: start_page_to_process = 10, end_page_to_process = 20
-    start_page_to_process: int | None = None 
-    end_page_to_process: int | None = None
-    # -------------------------------------------------------------
-    max_questions_total = 10
-    print(f"Successfully extracted {len(full_text)} characters.")
+    print(f"Successfully received {len(full_text)} characters for processing.")
 
-    # --- 2. Chunk Text ---
-    print("\nChunking text...")
     text_chunks = chunk_text(full_text, chunk_size=750, overlap=100)
     print(f"Text divided into {len(text_chunks)} chunks.")
 
-    # --- 3. Question Generation (Loop through chunks) ---
     all_generated_questions = []
-    questions_per_chunk = 3
 
     for i, chunk in enumerate(text_chunks):
         if len(all_generated_questions) >= max_questions_total:
             print(f"Reached maximum of {max_questions_total} questions. Stopping.")
             break
         print(f"\nProcessing chunk {i+1}/{len(text_chunks)}...")
-        questions = generate_questions_from_chunk(chunk, num_questions=questions_per_chunk)
+        questions = generate_questions_from_chunk(chunk, num_questions=questions_per_chunk_cli)
         all_generated_questions.extend(questions)
         if len(all_generated_questions) >= max_questions_total:
             all_generated_questions = all_generated_questions[:max_questions_total]
             print(f"Reached maximum of {max_questions_total} questions with this chunk. Stopping.")
             break
 
-    # --- 4. Display Results ---
-    print(f"\n--- Generated {len(all_generated_questions)} Questions Total ---")
+    print(f"\n--- Generated {len(all_generated_questions)} Questions Total (CLI Mode) ---")
     for i, q_data in enumerate(all_generated_questions):
         print(f"\nQuestion {i+1}: {q_data['question']}")
         for j, opt in enumerate(q_data['options']):
@@ -238,83 +280,69 @@ def main(full_text: str):
         print(f"Correct Answer: {chr(65+q_data['correct_answer_index'])}")
         print(f"Explanation: {q_data['explanation']}")
 
-    print("\nScript finished.")
+    print("\nCLI Script finished.")
 
 if __name__ == "__main__":
-    if not os.path.exists("STAT 230 Course Notes (Spring 2025 Edition).pdf"):
+    # This section is for direct command-line execution of pdf_processor.py
+    # It will retain the interactive page number input for CLI use.
+
+    # Check for reportlab for dummy PDF creation if target PDF not found
+    target_pdf_cli = "STAT 230 Course Notes (Spring 2025 Edition).pdf" # Default PDF for CLI
+    if not os.path.exists(target_pdf_cli):
         try:
             from reportlab.pdfgen import canvas
             from reportlab.lib.pagesizes import letter
             from reportlab.lib.units import inch
-
-            # Create a dummy sample.pdf if the target one isn't found
-            # (You might want to change this logic or remove it if you always provide the PDF)
-            dummy_pdf_name = "sample.pdf"
+            dummy_pdf_name = "sample_cli.pdf"
             c = canvas.Canvas(dummy_pdf_name, pagesize=letter)
             textobject = c.beginText()
             textobject.setTextOrigin(inch, 10*inch)
             textobject.setFont("Helvetica", 12)
-            lorem_ipsum = "This is a dummy PDF because the target PDF was not found. Please ensure your PDF file is correctly named and placed in the directory."            
+            lorem_ipsum = "This is a dummy PDF created for CLI execution because the target PDF was not found."          
             textobject.textLine(lorem_ipsum)
             c.drawText(textobject)
             c.save()
-            print(f"Created a dummy '{dummy_pdf_name}' for testing as the target PDF was not found.")
-            print(f"Please update 'pdf_file_path' in the script to your actual PDF or ensure it exists.")
-            print("You might need to install reportlab: pip install reportlab")
+            print(f"Created a dummy '{dummy_pdf_name}' for testing as '{target_pdf_cli}' was not found.")
+            target_pdf_cli = dummy_pdf_name # Use the dummy for this run
         except ImportError:
-            print(f"Skipped creating dummy PDF: 'reportlab' library not found and target PDF missing.")
+            print(f"Skipped creating dummy PDF: 'reportlab' library not found and target PDF '{target_pdf_cli}' missing.")
         except Exception as e:
             print(f"Could not create dummy PDF: {e}")
 
-    # Check for OpenAI API key before extracting text
     if not os.getenv("OPENAI_API_KEY"):
         print("Error: OPENAI_API_KEY not found in environment.")
-        print("Please ensure it is set in your .env file (e.g., OPENAI_API_KEY='your_key').")
+        print("Please ensure it is set in your .env file.")
+    elif not os.path.exists(target_pdf_cli):
+        print(f"Error: Target PDF '{target_pdf_cli}' not found and dummy could not be used. Exiting CLI mode.")
     else:
-        # --- 1. PDF to Text --- (Moved after API key check, and variable defined before use)
-        pdf_file_path_main = "STAT 230 Course Notes (Spring 2025 Edition).pdf" 
-        
-        # ------------ Get Page Range from User Input ------------
-        start_page_for_extraction: int | None = None
-        end_page_for_extraction: int | None = None
-
+        start_page_cli: int | None = None
+        end_page_cli: int | None = None
         while True:
             try:
-                start_input = input("Enter START page number to process (or press Enter for beginning): ").strip()
+                start_input = input("Enter START page for CLI processing (or Enter for beginning): ").strip()
                 if not start_input:
-                    start_page_for_extraction = None
-                    break
-                start_page_for_extraction = int(start_input)
-                if start_page_for_extraction <= 0:
-                    print("Start page must be a positive number. Please try again.")
-                    continue
+                    start_page_cli = None; break
+                start_page_cli = int(start_input)
+                if start_page_cli <= 0: print("Start page must be positive."); continue
                 break
-            except ValueError:
-                print("Invalid input. Please enter a number or press Enter.")
-
+            except ValueError: print("Invalid input.")
         while True:
             try:
-                end_input = input("Enter END page number to process (or press Enter for end): ").strip()
+                end_input = input("Enter END page for CLI processing (or Enter for end): ").strip()
                 if not end_input:
-                    end_page_for_extraction = None
-                    break
-                end_page_for_extraction = int(end_input)
-                if end_page_for_extraction <= 0:
-                    print("End page must be a positive number. Please try again.")
-                    continue
-                if start_page_for_extraction is not None and end_page_for_extraction < start_page_for_extraction:
-                    print(f"End page ({end_page_for_extraction}) cannot be before start page ({start_page_for_extraction}). Please try again.")
-                    continue
+                    end_page_cli = None; break
+                end_page_cli = int(end_input)
+                if end_page_cli <= 0: print("End page must be positive."); continue
+                if start_page_cli is not None and end_page_cli < start_page_cli:
+                    print(f"End page ({end_page_cli}) cannot be before start page ({start_page_cli})."); continue
                 break
-            except ValueError:
-                print("Invalid input. Please enter a number or press Enter.")
-        # ---------------------------------------------------------
+            except ValueError: print("Invalid input.")
+        
+        print(f"Extracting text from '{target_pdf_cli}' for CLI processing...")
+        cli_full_text = extract_text_from_pdf_path(target_pdf_cli, start_page=start_page_cli, end_page=end_page_cli)
 
-        print(f"Extracting text from '{pdf_file_path_main}'...")
-        full_text = extract_text_from_pdf(pdf_file_path_main, start_page=start_page_for_extraction, end_page=end_page_for_extraction)
-
-        if not full_text:
-            print("No text extracted based on page range or PDF content. Exiting.")
+        if not cli_full_text:
+            print("No text extracted for CLI processing. Exiting.")
         else:
-            print(f"Successfully extracted {len(full_text)} characters from the specified page range.")
-            main(full_text) # Pass full_text to main 
+            print(f"Successfully extracted {len(cli_full_text)} characters for CLI processing.")
+            main(cli_full_text) # Call main with the extracted text 

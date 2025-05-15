@@ -1,0 +1,7 @@
+PyMuPDF
+openai
+python-dotenv
+fastapi
+uvicorn[standard]
+SQLAlchemy
+aiosqlite 
