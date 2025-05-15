@@ -1,1 +1,15 @@
-.env 
+.env
+__pycache__/
+backend/kahootit.db
+
+# Optional: Add if you don't want to version editor-specific settings
+# .vscode/
+# .idea/
+
+# Optional: If you create virtual environments inside your project folder
+# venv/
+# .venv/
+# env/
+# .env/
+# ENV/
+# VENV/ 

@@ -4,4 +4,6 @@ python-dotenv
 fastapi
 uvicorn[standard]
 SQLAlchemy
-aiosqlite 
+aiosqlite
+python-jose[cryptography]
+passlib[bcrypt] 
