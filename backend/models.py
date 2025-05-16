@@ -20,7 +20,7 @@ class Quiz(Base):
     __tablename__ = "quizzes"
 
     id = Column(Integer, primary_key=True, index=True)
-    title = Column(String, index=True) # e.g., from PDF filename, or user-defined
+    title = Column(String, index=True, nullable=False) # e.g., from PDF filename, or user-defined
     pdf_filename = Column(String, index=True, nullable=True) # Store original PDF filename
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
