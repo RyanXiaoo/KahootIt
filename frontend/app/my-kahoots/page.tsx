@@ -1,93 +1,152 @@
 "use client";
 
-import Link from "next/link"; // Import Link for clickable tiles
-import ProtectedRoute from "../../components/ProtectedRoute"; // Adjust path if necessary
-import { useAuth } from "../../context/AuthContext"; // To potentially get user info later
-import QuizTile from "../../components/QuizTile"; // Import the QuizTile component
+import { useState, useEffect } from "react";
+// import Link from "next/link"; // No longer needed here if QuizTile handles its own link
+import ProtectedRoute from "../../components/ProtectedRoute";
+import { useAuth } from "../../context/AuthContext";
+import QuizTile from "../../components/QuizTile"; // Ensure this path is correct
 
-// Mock data for quizzes - replace with API call later
-const mockQuizzes = [
-    {
-        id: "1",
-        title: "Introduction to Photosynthesis",
-        dateCreated: "2023-10-26",
-        questionCount: 15,
-    },
-    {
-        id: "2",
-        title: "World War II: Key Battles",
-        dateCreated: "2023-11-05",
-        questionCount: 20,
-    },
-    {
-        id: "3",
-        title: "Calculus I: Derivatives",
-        dateCreated: "2023-11-12",
-        questionCount: 25,
-    },
-    {
-        id: "4",
-        title: "Shakespearean Sonnets",
-        dateCreated: "2023-11-18",
-        questionCount: 10,
-    },
-    {
-        id: "5",
-        title: "The Human Genome Project",
-        dateCreated: "2023-11-22",
-        questionCount: 18,
-    },
-    {
-        id: "6",
-        title: "Basics of Python Programming",
-        dateCreated: "2023-12-01",
-        questionCount: 30,
-    },
-    {
-        id: "7",
-        title: "Art History: Renaissance Period",
-        dateCreated: "2023-12-05",
-        questionCount: 22,
-    },
-    {
-        id: "8",
-        title: "Fundamentals of Organic Chemistry",
-        dateCreated: "2023-12-10",
-        questionCount: 28,
-    },
-];
+// Define the structure for a quiz fetched from the API
+interface ApiQuiz {
+    id: number; // Or string, depending on what your API sends and QuizTile expects after potential conversion
+    title: string;
+    question_count: number;
+    created_at: string; // ISO date string
+    pdf_filename?: string;
+}
+
+// Define the structure QuizTile expects (matching QuizTile.tsx)
+interface QuizTileData {
+    id: string;
+    title: string;
+    questionCount: number;
+    dateCreated: string;
+    pdfFilename?: string; // Optional: if you want to use it in QuizTile
+}
 
 export default function MyKahootsPage() {
-    // Renamed component for clarity
     const { token } = useAuth();
-    // const { user } = useAuth(); // You can get the user object here once you add it to AuthContext
+    const [quizzes, setQuizzes] = useState<QuizTileData[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-    // In a real app, you would fetch quizzes using the token
-    // For now, we use mockQuizzes
-    const quizzes = mockQuizzes;
+    useEffect(() => {
+        const fetchQuizzes = async () => {
+            console.log("Auth Token being sent:", token); // Check if token is present and looks like a JWT
+            console.log(
+                "Fetching from URL:",
+                "http://localhost:8000/quizzes/my"
+            );
+            console.log("Request Headers:", {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+            });
+            if (!token) {
+                setIsLoading(false);
+                // setError("Not authenticated. Please log in."); // Or rely on ProtectedRoute
+                return;
+            }
+
+            setIsLoading(true);
+            setError(null);
+
+            try {
+                const response = await fetch(
+                    "http://localhost:8000/quizzes/my",
+                    {
+                        method: "GET",
+                        headers: {
+                            "Content-Type": "application/json",
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
+                );
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({
+                        detail: "Failed to fetch quizzes. Server returned an error.",
+                    }));
+                    throw new Error(
+                        errorData.detail ||
+                            `HTTP error! status: ${response.status}`
+                    );
+                }
+
+                const data: ApiQuiz[] = await response.json();
+
+                // Adapt API data to what QuizTile expects
+                const adaptedQuizzes: QuizTileData[] = data.map((apiQuiz) => ({
+                    id: String(apiQuiz.id), // Ensure id is a string
+                    title: apiQuiz.title,
+                    questionCount: apiQuiz.question_count,
+                    // Format date string (e.g., "2023-10-26") or pass ISO string if QuizTile handles it
+                    dateCreated: new Date(
+                        apiQuiz.created_at
+                    ).toLocaleDateString("en-CA"), // Example: YYYY-MM-DD
+                    pdfFilename: apiQuiz.pdf_filename,
+                }));
+
+                setQuizzes(adaptedQuizzes);
+            } catch (err: any) {
+                console.error("Failed to fetch quizzes:", err);
+                setError(
+                    err.message ||
+                        "An unexpected error occurred while fetching your quizzes."
+                );
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchQuizzes();
+    }, [token]); // Re-fetch if token changes
 
     return (
         <ProtectedRoute>
             <div className="container mx-auto px-4 py-8">
                 <div className="flex justify-between items-center mb-8">
                     <h1 className="text-3xl sm:text-4xl font-bold text-white">
+                        {" "}
+                        {/* Consider dark mode for text if bg is dark */}
                         My Kahoots
                     </h1>
+                    {/* Optional: Add a "Create New" button here */}
+                    {/* <Link href="/create-kahoot" className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition duration-150 ease-in-out">
+                        + Create New Quiz
+                    </Link> */}
                 </div>
 
-                {quizzes.length === 0 ? (
+                {isLoading && (
                     <div className="text-center py-10">
-                        <p className="text-xl text-gray-500 mb-4">
+                        <p className="text-xl text-gray-400">
+                            Loading your Kahoots...
+                        </p>
+                        {/* You can add a spinner component here */}
+                    </div>
+                )}
+
+                {!isLoading && error && (
+                    <div
+                        className="text-center py-10 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative"
+                        role="alert"
+                    >
+                        <strong className="font-bold">Oops! </strong>
+                        <span className="block sm:inline">{error}</span>
+                    </div>
+                )}
+
+                {!isLoading && !error && quizzes.length === 0 && (
+                    <div className="text-center py-10">
+                        <p className="text-xl text-gray-400 mb-4">
                             You haven't created any Kahoots yet.
                         </p>
-                        {/* Optional: A more prominent CTA if no quizzes exist */}
                         {/* <Link href="/create-kahoot" className="bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition duration-150 ease-in-out">
                             Create Your First Kahoot!
                         </Link> */}
                     </div>
-                ) : (
-                    // Grid container for quiz tiles
-                    // The main scrollable area will be the page itself due to min-h-screen on layout
+                )}
+
+                {!isLoading && !error && quizzes.length > 0 && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                         {quizzes.map((quiz) => (
                             <QuizTile quiz={quiz} key={quiz.id} />

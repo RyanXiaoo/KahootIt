@@ -1,21 +1,32 @@
 "use client";
 
-import { useState, FormEvent } from "react";
-import { useRouter } from "next/navigation"; // For potential redirects after submit
+import { useState, FormEvent, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "../../context/AuthContext";
 
 export default function CreateKahootPage() {
+    const { token, isLoading: authIsLoading, isAuthenticated } = useAuth();
+
     const [quizTitle, setQuizTitle] = useState("");
     const [pdfFile, setPdfFile] = useState<File | null>(null);
     const [startPage, setStartPage] = useState("");
     const [endPage, setEndPage] = useState("");
-    const [maxTotalQuestions, setMaxTotalQuestions] = useState("10"); // Default to 10
-    // const [questionsPerChunk, setQuestionsPerChunk] = useState('3'); // Default to 3 - API has this default
+    const [maxTotalQuestions, setMaxTotalQuestions] = useState("10");
 
-    const [isLoading, setIsLoading] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
     const router = useRouter();
+
+    useEffect(() => {
+        if (!authIsLoading && !isAuthenticated) {
+            setError("You are not logged in. Please log in to create a quiz.");
+        }
+        if (!authIsLoading && isAuthenticated) {
+            setError(null);
+        }
+    }, [authIsLoading, isAuthenticated]);
 
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files && event.target.files[0]) {
@@ -27,18 +38,30 @@ export default function CreateKahootPage() {
 
     const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        setIsLoading(true);
+
+        if (authIsLoading) {
+            setError("Authentication is still loading. Please wait.");
+            return;
+        }
+
+        if (!isAuthenticated || !token) {
+            setError("You are not logged in. Please log in to create a quiz.");
+            setIsSubmitting(false);
+            return;
+        }
+
+        setIsSubmitting(true);
         setError(null);
         setSuccessMessage(null);
 
         if (!quizTitle.trim()) {
             setError("Quiz title is required.");
-            setIsLoading(false);
+            setIsSubmitting(false);
             return;
         }
         if (!pdfFile) {
             setError("Please select a PDF file.");
-            setIsLoading(false);
+            setIsSubmitting(false);
             return;
         }
 
@@ -49,17 +72,6 @@ export default function CreateKahootPage() {
         if (endPage) formData.append("end_page", endPage);
         if (maxTotalQuestions)
             formData.append("max_total_questions", maxTotalQuestions);
-        // The API defaults questions_per_chunk to 3 if not provided
-        // if (questionsPerChunk) formData.append('questions_per_chunk', questionsPerChunk);
-
-        // Fetch the token from localStorage (or your auth context)
-        const token = localStorage.getItem("kahootit_token");
-        if (!token) {
-            setError("You are not logged in. Please log in to create a quiz.");
-            setIsLoading(false);
-            // router.push('/login'); // Optional: redirect to login
-            return;
-        }
 
         try {
             const response = await fetch(
@@ -68,7 +80,6 @@ export default function CreateKahootPage() {
                     method: "POST",
                     headers: {
                         Authorization: `Bearer ${token}`,
-                        // 'Content-Type': 'multipart/form-data' is automatically set by browser with FormData
                     },
                     body: formData,
                 }
@@ -85,13 +96,11 @@ export default function CreateKahootPage() {
             setSuccessMessage(
                 `Quiz "${result.quiz_title}" created successfully with ID: ${result.quiz_id}! (${result.num_questions_generated} questions)`
             );
-            // Optionally, clear the form or redirect
             setQuizTitle("");
             setPdfFile(null);
             setStartPage("");
             setEndPage("");
             setMaxTotalQuestions("10");
-            // router.push(`/dashboard`); // Or to a page showing the new quiz
             console.log("Quiz creation successful:", result);
         } catch (err: any) {
             console.error("Failed to create quiz:", err);
@@ -99,9 +108,15 @@ export default function CreateKahootPage() {
                 err.message || "An unexpected error occurred. Please try again."
             );
         } finally {
-            setIsLoading(false);
+            setIsSubmitting(false);
         }
     };
+
+    if (authIsLoading && !error) {
+        return (
+            <div className="text-center p-10">Loading authentication...</div>
+        );
+    }
 
     return (
         <div className="container mx-auto p-4 max-w-2xl">
@@ -164,7 +179,8 @@ export default function CreateKahootPage() {
                             htmlFor="startPage"
                             className="block text-sm font-medium text-gray-700 mb-1"
                         >
-                            Start Page (Processes from 0 if blank)
+                            Start Page (Optional - processes from page 1 if
+                            blank)
                         </label>
                         <input
                             type="number"
@@ -181,7 +197,7 @@ export default function CreateKahootPage() {
                             htmlFor="endPage"
                             className="block text-sm font-medium text-gray-700 mb-1"
                         >
-                            End Page (Processes to end if blank)
+                            End Page (Optional - processes to end if blank)
                         </label>
                         <input
                             type="number"
@@ -213,22 +229,6 @@ export default function CreateKahootPage() {
                     />
                 </div>
 
-                {/* Optional: Questions per chunk - API has a default so maybe not needed unless user wants fine control */}
-                {/* <div>
-          <label htmlFor="questionsPerChunk" className="block text-sm font-medium text-gray-700 mb-1">
-            Questions per Text Chunk (Optional)
-          </label>
-          <input
-            type="number"
-            id="questionsPerChunk"
-            value={questionsPerChunk}
-            onChange={(e) => setQuestionsPerChunk(e.target.value)}
-            min="1"
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-            placeholder="Default: 3"
-          />
-        </div> */}
-
                 {error && (
                     <p className="text-sm text-red-600 bg-red-100 p-3 rounded-md">
                         {error}
@@ -243,10 +243,12 @@ export default function CreateKahootPage() {
                 <div className="flex justify-end pt-4">
                     <button
                         type="submit"
-                        disabled={isLoading}
+                        disabled={
+                            isSubmitting || authIsLoading || !isAuthenticated
+                        }
                         className="inline-flex justify-center py-2 px-6 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
                     >
-                        {isLoading ? "Creating..." : "Create Kahoot"}
+                        {isSubmitting ? "Creating..." : "Create Kahoot"}
                     </button>
                 </div>
             </form>
