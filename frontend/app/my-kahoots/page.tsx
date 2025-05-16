@@ -90,9 +90,7 @@ export default function MyKahootsPage() {
                     // The main scrollable area will be the page itself due to min-h-screen on layout
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                         {quizzes.map((quiz) => (
-                            <Link href={`/quiz/${quiz.id}`} key={quiz.id}>
-                                <QuizTile quiz={quiz} />
-                            </Link>
+                            <QuizTile quiz={quiz} key={quiz.id} />
                         ))}
                     </div>
                 )}

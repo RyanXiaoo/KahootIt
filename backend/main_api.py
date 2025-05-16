@@ -150,10 +150,14 @@ async def create_quiz_from_upload(
         if not generated_question_data:
             raise HTTPException(status_code=422, detail="Could not generate questions from the PDF.")
 
+        # Calculate question count
+        num_questions = len(generated_question_data)
+
         db_quiz = models.Quiz(
             title=actual_quiz_title,
             pdf_filename=file.filename, 
-            user_id=current_user.id
+            user_id=current_user.id,
+            question_count=num_questions  # Set the question_count here
         )
         db.add(db_quiz)
         print(f"Attempting to commit quiz titled '{actual_quiz_title}' for {file.filename} by user {current_user.username}...")

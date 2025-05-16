@@ -23,6 +23,7 @@ class Quiz(Base):
     title = Column(String, index=True, nullable=False) # e.g., from PDF filename, or user-defined
     pdf_filename = Column(String, index=True, nullable=True) # Store original PDF filename
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    question_count = Column(Integer, nullable=False, default=0) # Added question_count
     
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     owner = relationship("User", back_populates="quizzes")
