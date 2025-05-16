@@ -26,16 +26,18 @@ app = FastAPI(
 
 # CORS Configuration
 origins = [
-    "http://localhost:3000",  # Your Next.js frontend origin
-    # You can add other origins if needed, e.g., your deployed frontend URL
+    "http://localhost:3000",  # Standard localhost for Next.js dev
+    "http://127.0.0.1:3000", # Another common localhost for Next.js dev
+    "http://10.120.3.77:3000", # The origin shown in your error message
+    # Add any other origins your frontend might be served from (e.g., deployed URL)
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins, # Allows specific origins
-    allow_credentials=True, # Allows cookies to be included in requests
-    allow_methods=["*"],    # Allows all methods (GET, POST, etc.)
-    allow_headers=["*"],    # Allows all headers
+    allow_origins=origins, 
+    allow_credentials=True, 
+    allow_methods=["*"],    
+    allow_headers=["*"],    
 )
 
 # --- Pydantic Schemas for Users and Tokens ---

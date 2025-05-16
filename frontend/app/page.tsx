@@ -1,15 +1,27 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { loginUser } from "../lib/api";
-
+import { useAuth } from "../context/AuthContext";
+import Image from "next/image";
 export default function HomePage() {
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const router = useRouter();
+    const {
+        login: authLogin,
+        isLoading: authIsLoading,
+        isAuthenticated,
+    } = useAuth();
+
+    useEffect(() => {
+        if (!authIsLoading && isAuthenticated) {
+            router.push("/my-kahoots");
+        }
+    }, [authIsLoading, isAuthenticated, router]);
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -20,13 +32,8 @@ export default function HomePage() {
             const data = await loginUser(username, password);
             console.log("Login successful, token:", data.access_token);
 
-            if (typeof window !== "undefined") {
-                localStorage.setItem("accessToken", data.access_token);
-                localStorage.setItem("tokenType", data.token_type);
-            }
-
-            alert("Login successful! Token: " + data.access_token);
-            router.push("/dashboard");
+            authLogin(data.access_token);
+            router.push("/my-kahoots");
         } catch (err) {
             if (err instanceof Error) {
                 setError(err.message);
@@ -38,18 +45,26 @@ export default function HomePage() {
         }
     };
 
+    if (authIsLoading || isAuthenticated) {
+        return (
+            <main className="flex flex-col items-center justify-center min-h-screen p-4 bg-indigo-700">
+                <p className="text-white">Loading...</p>
+            </main>
+        );
+    }
+
     return (
         <main className="flex flex-col items-center justify-center min-h-screen p-4">
-            <div className="w-1/2 max-w-md h-2/3 p-8 space-y-6 bg-white rounded-xl shadow-lg">
-                <div className="text-center">
-                    <h1 className="text-3xl font-bold text-gray-800">
-                        Welcome to KahootIt!
-                    </h1>
-                    <p className="mt-2 text-gray-600">
-                        Turn your notes into Kahoots
-                    </p>
-                </div>
+            <div className="text-center mb-10">
+                <h1 className="text-5xl sm:text-6xl md:text-7xl font-extrabold text-white tracking-tight">
+                    KahootIt!
+                </h1>
+                <p className="mt-3 text-lg sm:text-xl text-indigo-200">
+                    Turn your PDF notes into Kahoots
+                </p>
+            </div>
 
+            <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-2xl shadow-xl">
                 <form onSubmit={handleSubmit} className="flex flex-col">
                     <div className="space-y-0">
                         <div>
@@ -66,7 +81,6 @@ export default function HomePage() {
                                 onChange={(e) => setUsername(e.target.value)}
                                 required
                                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                                placeholder="yourusername"
                             />
                         </div>
                         <div>
@@ -83,7 +97,6 @@ export default function HomePage() {
                                 onChange={(e) => setPassword(e.target.value)}
                                 required
                                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                                placeholder="••••••••"
                             />
                         </div>
                     </div>
@@ -93,7 +106,7 @@ export default function HomePage() {
                     <button
                         type="submit"
                         disabled={isLoading}
-                        className="w-full mt-3 py-2 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-md shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition duration-150 ease-in-out"
+                        className="w-full mt-3 py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition duration-150 ease-in-out"
                     >
                         {isLoading ? "Logging in..." : "Login"}
                     </button>
