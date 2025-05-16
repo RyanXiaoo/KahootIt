@@ -17,20 +17,20 @@ export default function Navbar() {
 
     // Only render Navbar if authenticated and not loading
     return (
-        <header className="bg-indigo-700 text-white p-4 shadow-lg sticky top-0 z-50">
+        <header className="bg-custom-gray text-white p-4 shadow-lg sticky top-0 z-50">
             <div className="container mx-auto flex justify-between items-center">
                 {/* Logo - Far Left - Non-navigational when logged in */}
                 <a
                     href="#"
                     onClick={(e) => e.preventDefault()}
-                    className="text-2xl font-extrabold transition-colors cursor-default"
+                    className="px-24 text-2xl font-extrabold transition-colors cursor-default"
                 >
                     KahootIt!
                 </a>
 
                 {/* Navigation Links - Far Right */}
-                <nav>
-                    <ul className="flex items-center space-x-4 sm:space-x-6">
+                <nav className="px-24">
+                    <ul className="flex items-center space-x-4 sm:space-x-14">
                         <li>
                             <Link
                                 href="/my-kahoots"
