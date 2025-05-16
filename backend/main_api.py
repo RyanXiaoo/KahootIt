@@ -60,6 +60,21 @@ class Token(BaseModel):
 class TokenData(BaseModel):
     username: Optional[str] = None
 
+# --- Pydantic Schemas for Quiz List ---
+class QuizBasicInfo(BaseModel):
+    id: int
+    title: str
+    question_count: int
+    created_at: datetime
+    pdf_filename: Optional[str] = None
+
+    class Config:
+        orm_mode = True
+
+# class QuizList(BaseModel): # Not strictly needed if endpoint returns List[QuizBasicInfo]
+#     quizzes: List[QuizBasicInfo]
+#     total: int
+
 # --- OAuth2 Password Bearer ---
 # This tells FastAPI where to look for the token (in the Authorization header)
 # The tokenUrl MUST point to the actual login endpoint path
@@ -98,6 +113,16 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
 @app.get("/users/me", response_model=UserDisplay, tags=["User"], summary="Get current user details")
 async def read_users_me(current_user: models.User = Depends(auth.get_current_user)):
     return current_user
+
+@app.get("/quizzes/my", response_model=List[QuizBasicInfo], tags=["Quiz Management"], summary="Get all quizzes for the current user")
+async def get_my_quizzes(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    quizzes = db.query(models.Quiz).filter(models.Quiz.user_id == current_user.id).order_by(models.Quiz.created_at.desc()).all()
+    # Return empty list if no quizzes are found, which is fine for a list endpoint.
+    # The frontend can then display a "No quizzes yet" message.
+    return quizzes
 
 @app.get("/")
 async def read_root():
