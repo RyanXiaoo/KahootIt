@@ -3,6 +3,9 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useAuth } from "../../../context/AuthContext"; // Adjust path if context is elsewhere
+import StudyModeCard from "../../../components/StudyModeCard"; // Import the new component
+import FlashcardInterface from "../../../components/FlashcardInterface"; // Import FlashcardInterface
+import LearnInterface from "../../../components/LearnInterface"; // Import LearnInterface
 
 // Define interfaces for the data structures
 interface Question {
@@ -28,6 +31,10 @@ export default function QuizDetailPage() {
     const [quizData, setQuizData] = useState<QuizData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+
+    // New state for modal and study mode
+    const [activeStudyMode, setActiveStudyMode] = useState<string | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
     const quizId = params.id; // This will be a string, e.g., "1", "2"
 
@@ -110,15 +117,37 @@ export default function QuizDetailPage() {
         );
     }
 
-    // Placeholder functions for mode selection - to be implemented later
     const handleFlashcardsClick = () => {
         console.log("Flashcards mode selected for quiz:", quizData.quiz_id);
-        // Here you would navigate to a flashcards view or update state to show flashcards
+        setActiveStudyMode("flashcards");
+        setIsModalOpen(true);
     };
 
     const handleLearnClick = () => {
         console.log("Learn mode selected for quiz:", quizData.quiz_id);
-        // Here you would navigate to a learn view or update state to show learn mode
+        setActiveStudyMode("learn"); // For now, also opens the modal, content will differ
+        setIsModalOpen(true);
+    };
+
+    const closeModal = () => {
+        setIsModalOpen(false);
+        setActiveStudyMode(null);
+    };
+
+    const flashcardGradient = {
+        from: "from-[#5424a2]", // Your custom purple
+        to: "to-[#1e1b4b]", // Your custom dark indigo/purple
+        hoverFrom: "hover:from-[#6a3bb5]", // Slightly lighter hover
+        hoverTo: "hover:to-[#2f2a6d]", // Slightly lighter hover
+        ring: "purple-400",
+    };
+
+    const learnGradient = {
+        from: "from-[#5424a2]", // Using same gradient for now, can be different
+        to: "to-[#1e1b4b]",
+        hoverFrom: "hover:from-[#6a3bb5]",
+        hoverTo: "hover:to-[#2f2a6d]",
+        ring: "indigo-400",
     };
 
     return (
@@ -144,36 +173,50 @@ export default function QuizDetailPage() {
 
                 {/* Mode Selection Boxes */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
-                    {/* Flashcards Box */}
-                    <button
+                    <StudyModeCard
+                        title="Flashcards"
+                        description="Review terms and concepts."
+                        icon={<div className="text-6xl mb-4">🗂️</div>} // Or use an actual icon component
                         onClick={handleFlashcardsClick}
-                        className="study-mode-box bg-gradient-to-br from-[#5424a2] to-[#1e1b4b] p-6 sm:p-8 rounded-xl shadow-2xl transform hover:scale-105 transition-all duration-300 ease-in-out focus:outline-none focus:ring-4 focus:ring-purple-400 focus:ring-opacity-50 flex flex-col items-center justify-center aspect-[4/3] sm:aspect-video"
-                    >
-                        {/* Placeholder for an icon - you can add an SVG or an image here */}
-                        <div className="text-6xl mb-4">🗂️</div>
-                        <h3 className="text-2xl sm:text-3xl font-bold">
-                            Flashcards
-                        </h3>
-                        <p className="text-sm text-purple-200 mt-1">
-                            Review terms and concepts.
-                        </p>
-                    </button>
-
-                    {/* Learn Box */}
-                    <button
+                        gradientColors={flashcardGradient}
+                        textColorClass="text-purple-200"
+                    />
+                    <StudyModeCard
+                        title="Learn"
+                        description="Test your knowledge."
+                        icon={<div className="text-6xl mb-4">💡</div>} // Or use an actual icon component
                         onClick={handleLearnClick}
-                        className="study-mode-box bg-gradient-to-br from-[#5424a2] to-[#1e1b4b] p-6 sm:p-8 rounded-xl shadow-2xl transform hover:scale-105 transition-all duration-300 ease-in-out focus:outline-none focus:ring-4 focus:ring-indigo-400 focus:ring-opacity-50 flex flex-col items-center justify-center aspect-[4/3] sm:aspect-video"
-                    >
-                        {/* Placeholder for an icon */}
-                        <div className="text-6xl mb-4">💡</div>
-                        <h3 className="text-2xl sm:text-3xl font-bold">
-                            Learn
-                        </h3>
-                        <p className="text-sm text-indigo-200 mt-1">
-                            Test your knowledge.
-                        </p>
-                    </button>
+                        gradientColors={learnGradient}
+                        textColorClass="text-indigo-200"
+                    />
                 </div>
+
+                {/* Modal Rendering */}
+                {isModalOpen && quizData && activeStudyMode && (
+                    <div className="fixed inset-0 bg-gradient-to-br from-[#5424a2] to-[#1e1b4b] flex items-center justify-center z-50 p-4 overflow-y-auto">
+                        <div
+                            className={`my-auto ${
+                                activeStudyMode === "learn"
+                                    ? "w-full max-w-3xl"
+                                    : "max-w-2xl w-full"
+                            }`}
+                        >
+                            {activeStudyMode === "flashcards" && (
+                                <FlashcardInterface
+                                    questions={quizData.questions}
+                                    onClose={closeModal}
+                                />
+                            )}
+                            {activeStudyMode === "learn" && (
+                                <LearnInterface
+                                    questions={quizData.questions}
+                                    quizTitle={quizData.quiz_title}
+                                    onClose={closeModal}
+                                />
+                            )}
+                        </div>
+                    </div>
+                )}
 
                 {/* Optional: Display full question list for debugging or direct access - can be removed */}
                 {/* 
