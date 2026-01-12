@@ -35,6 +35,9 @@ export default function QuizDetailPage() {
     // New state for modal and study mode
     const [activeStudyMode, setActiveStudyMode] = useState<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    
+    // State for creating game
+    const [isCreatingGame, setIsCreatingGame] = useState(false);
 
     const quizId = params.id; // This will be a string, e.g., "1", "2"
 
@@ -118,14 +121,12 @@ export default function QuizDetailPage() {
     }
 
     const handleFlashcardsClick = () => {
-        console.log("Flashcards mode selected for quiz:", quizData.quiz_id);
         setActiveStudyMode("flashcards");
         setIsModalOpen(true);
     };
 
     const handleLearnClick = () => {
-        console.log("Learn mode selected for quiz:", quizData.quiz_id);
-        setActiveStudyMode("learn"); // For now, also opens the modal, content will differ
+        setActiveStudyMode("learn");
         setIsModalOpen(true);
     };
 
@@ -150,45 +151,100 @@ export default function QuizDetailPage() {
         ring: "indigo-400",
     };
 
+    const handleHostGameClick = async () => {
+        setIsCreatingGame(true);
+
+        try {
+            const response = await fetch('http://localhost:8000/api/game/create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ quiz_id: quizData.quiz_id })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to create game');
+            }
+
+            const data = await response.json();
+            // Navigate to host lobby with the PIN
+            window.location.href = `/host/${data.pin}`;
+        } catch (err) {
+            console.error('Failed to create game:', err);
+            alert('Failed to create game. Please try again.');
+        } finally {
+            setIsCreatingGame(false);
+        }
+    };
+
     return (
-        <div className="min-h-screen text-white flex flex-col items-center p-4 sm:p-6 lg:p-8">
-            <div className="w-full max-w-4xl">
+        <div className="min-h-screen text-white p-4 sm:p-6 lg:p-8 pt-8">
+            <div className="w-full max-w-5xl mx-auto">
                 {/* Quiz Title Area */}
-                <div className="mb-10 text-center">
-                    <h1 className="text-4xl sm:text-5xl font-bold mb-2 break-words">
+                <div className="mb-8 text-center">
+                    <h1 className="text-5xl sm:text-6xl font-black mb-4 break-words" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
                         {quizData.quiz_title}
                     </h1>
-                    <p className="text-lg text-indigo-200">
-                        Original PDF: {quizData.pdf_filename} | Total Questions:{" "}
-                        {quizData.num_questions}
-                    </p>
+                    <div className="flex items-center justify-center gap-4 text-white/70 text-sm">
+                        <span>{quizData.pdf_filename}</span>
+                        <span>•</span>
+                        <span>{quizData.num_questions} Questions</span>
+                    </div>
                 </div>
 
-                {/* Study Modes Section Title */}
-                <div className="mb-8 text-center">
-                    <h2 className="text-2xl sm:text-3xl font-semibold text-indigo-100">
+                {/* Host Game Button */}
+                <div className="mb-10 text-center">
+                    <button
+                        onClick={handleHostGameClick}
+                        disabled={isCreatingGame}
+                        className="px-8 py-3 bg-pink-500 hover:bg-pink-600 text-white font-bold rounded-lg shadow-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {isCreatingGame ? 'Creating Game...' : 'Host Live Game'}
+                    </button>
+                </div>
+
+                {/* Study Modes Section */}
+                <div className="mb-6 text-center">
+                    <h2 className="text-2xl font-semibold text-white/90">
                         Choose a Study Mode
                     </h2>
                 </div>
 
                 {/* Mode Selection Boxes */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
-                    <StudyModeCard
-                        title="Flashcards"
-                        description="Review terms and concepts."
-                        icon={<div className="text-6xl mb-4">🗂️</div>} // Or use an actual icon component
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+                    {/* Flashcards Card */}
+                    <button
                         onClick={handleFlashcardsClick}
-                        gradientColors={flashcardGradient}
-                        textColorClass="text-purple-200"
-                    />
-                    <StudyModeCard
-                        title="Learn"
-                        description="Test your knowledge."
-                        icon={<div className="text-6xl mb-4">💡</div>} // Or use an actual icon component
+                        className="bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 rounded-2xl p-8 transition-all duration-300 transform hover:scale-105 hover:shadow-2xl group"
+                    >
+                        <div className="flex flex-col items-center text-center">
+                            <div className="w-20 h-20 bg-purple-500 rounded-full flex items-center justify-center mb-4 group-hover:bg-purple-400 transition-colors">
+                                <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                                </svg>
+                            </div>
+                            <h3 className="text-2xl font-bold text-white mb-2">Flashcards</h3>
+                            <p className="text-white/70 text-sm">Review terms and concepts</p>
+                        </div>
+                    </button>
+
+                    {/* Learn Card */}
+                    <button
                         onClick={handleLearnClick}
-                        gradientColors={learnGradient}
-                        textColorClass="text-indigo-200"
-                    />
+                        className="bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 rounded-2xl p-8 transition-all duration-300 transform hover:scale-105 hover:shadow-2xl group"
+                    >
+                        <div className="flex flex-col items-center text-center">
+                            <div className="w-20 h-20 bg-yellow-500 rounded-full flex items-center justify-center mb-4 group-hover:bg-yellow-400 transition-colors">
+                                <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                                </svg>
+                            </div>
+                            <h3 className="text-2xl font-bold text-white mb-2">Learn</h3>
+                            <p className="text-white/70 text-sm">Test your knowledge</p>
+                        </div>
+                    </button>
                 </div>
 
                 {/* Modal Rendering */}

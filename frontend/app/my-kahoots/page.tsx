@@ -103,51 +103,59 @@ export default function MyKahootsPage() {
 
     return (
         <ProtectedRoute>
-            <div className="container mx-auto px-4 py-8">
-                <div className="flex justify-between items-center mb-8">
-                    <h1 className="text-3xl sm:text-4xl font-bold text-white">
-                        {" "}
-                        {/* Consider dark mode for text if bg is dark */}
-                        My Kahoots
-                    </h1>
-                    {/* Optional: Add a "Create New" button here */}
-                    {/* <Link href="/create-kahoot" className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition duration-150 ease-in-out">
-                        + Create New Quiz
-                    </Link> */}
+            <div className="container mx-auto px-4 py-8 max-w-7xl">
+                {/* Header Section */}
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-10 gap-4">
+                    <div>
+                        <h1 className="text-4xl sm:text-5xl font-black text-white mb-2">
+                            My Kahoots
+                        </h1>
+                        <p className="text-white/70 text-lg">
+                            {quizzes.length} {quizzes.length === 1 ? 'quiz' : 'quizzes'} ready to play
+                        </p>
+                    </div>
                 </div>
 
+                {/* Loading State */}
                 {isLoading && (
-                    <div className="text-center py-10">
-                        <p className="text-xl text-gray-400">
+                    <div className="text-center py-20">
+                        <div className="inline-block animate-spin w-16 h-16 border-4 border-white/30 border-t-white rounded-full mb-4"></div>
+                        <p className="text-2xl text-white font-semibold">
                             Loading your Kahoots...
                         </p>
-                        {/* You can add a spinner component here */}
                     </div>
                 )}
 
+                {/* Error State */}
                 {!isLoading && error && (
                     <div
-                        className="text-center py-10 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative"
+                        className="text-center py-10 bg-red-500/20 backdrop-blur-sm border-2 border-red-400 text-white px-6 py-6 rounded-2xl shadow-xl"
                         role="alert"
                     >
-                        <strong className="font-bold">Oops! </strong>
-                        <span className="block sm:inline">{error}</span>
+                        <div className="text-5xl mb-4">⚠️</div>
+                        <strong className="font-bold text-xl block mb-2">Oops!</strong>
+                        <span className="text-lg">{error}</span>
                     </div>
                 )}
 
+                {/* Empty State */}
                 {!isLoading && !error && quizzes.length === 0 && (
-                    <div className="text-center py-10">
-                        <p className="text-xl text-gray-400 mb-4">
-                            You haven't created any Kahoots yet.
-                        </p>
-                        {/* <Link href="/create-kahoot" className="bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition duration-150 ease-in-out">
-                            Create Your First Kahoot!
-                        </Link> */}
+                    <div className="text-center py-20">
+                        <div className="bg-white/10 backdrop-blur-md rounded-3xl p-12 max-w-2xl mx-auto border-2 border-white/20">
+                            <div className="text-7xl mb-6">📚</div>
+                            <h2 className="text-3xl font-bold text-white mb-4">
+                                No Kahoots Yet
+                            </h2>
+                            <p className="text-xl text-white/80 mb-8">
+                                Create your first quiz to get started!
+                            </p>
+                        </div>
                     </div>
                 )}
 
+                {/* Quiz Grid */}
                 {!isLoading && !error && quizzes.length > 0 && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                         {quizzes.map((quiz) => (
                             <QuizTile quiz={quiz} key={quiz.id} />
                         ))}

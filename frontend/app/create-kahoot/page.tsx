@@ -94,14 +94,16 @@ export default function CreateKahootPage() {
             }
 
             setSuccessMessage(
-                `Quiz "${result.quiz_title}" created successfully with ID: ${result.quiz_id}! (${result.num_questions_generated} questions)`
+                `Quiz "${result.quiz_title}" created successfully! Redirecting...`
             );
-            setQuizTitle("");
-            setPdfFile(null);
+            
+            // Redirect to the quiz page after a short delay
+            setTimeout(() => {
+                router.push(`/quiz/${result.quiz_id}`);
+            }, 1500);
             setStartPage("");
             setEndPage("");
             setMaxTotalQuestions("10");
-            console.log("Quiz creation successful:", result);
         } catch (err: any) {
             console.error("Failed to create quiz:", err);
             setError(
@@ -114,144 +116,148 @@ export default function CreateKahootPage() {
 
     if (authIsLoading && !error) {
         return (
-            <div className="text-center p-10">Loading authentication...</div>
+            <main className="flex flex-col items-center justify-center min-h-screen p-4">
+                <p className="text-white text-lg">Loading...</p>
+            </main>
         );
     }
 
     return (
-        <div className="container mx-auto p-4 max-w-2xl">
-            <h1 className="text-3xl text-white font-bold mb-6 text-center">
-                Create New Kahoot Quiz
-            </h1>
-
-            <form
-                onSubmit={handleSubmit}
-                className="space-y-6 bg-white shadow-md rounded-lg p-8"
-            >
-                <div>
-                    <label
-                        htmlFor="quizTitle"
-                        className="block text-sm font-medium text-gray-700 mb-1"
-                    >
-                        Quiz Title <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                        type="text"
-                        id="quizTitle"
-                        value={quizTitle}
-                        onChange={(e) => setQuizTitle(e.target.value)}
-                        required
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                        placeholder="e.g., Chapter 1 Review"
-                    />
+        <main className="min-h-screen p-4 pt-8">
+            <div className="w-full max-w-2xl mx-auto flex flex-col items-center">
+                {/* Title */}
+                <div className="text-center mb-8">
+                    <h1 className="text-6xl font-black text-white mb-3" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                        Create Kahoot
+                    </h1>
                 </div>
 
-                <div>
-                    <label
-                        htmlFor="pdfFile"
-                        className="block text-sm font-medium text-gray-700 mb-1"
-                    >
-                        Upload PDF Notes <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                        type="file"
-                        id="pdfFile"
-                        onChange={handleFileChange}
-                        accept=".pdf"
-                        required
-                        className="mt-1 block w-full text-sm text-gray-500
-                       file:mr-4 file:py-2 file:px-4
-                       file:rounded-md file:border-0
-                       file:text-sm file:font-semibold
-                       file:bg-indigo-50 file:text-indigo-700
-                       hover:file:bg-indigo-100"
-                    />
-                    {pdfFile && (
-                        <p className="text-xs text-gray-500 mt-1">
-                            Selected: {pdfFile.name}
-                        </p>
-                    )}
-                </div>
+                {/* Form Card */}
+                <div className="w-full bg-white rounded-2xl shadow-2xl p-8">
+                    <form onSubmit={handleSubmit} className="space-y-5">
+                        <div>
+                            <label
+                                htmlFor="quizTitle"
+                                className="block mb-2 text-sm font-semibold text-gray-700"
+                            >
+                                Quiz Title <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                                type="text"
+                                id="quizTitle"
+                                value={quizTitle}
+                                onChange={(e) => setQuizTitle(e.target.value)}
+                                required
+                                className="w-full px-4 py-2.5 border border-gray-300 rounded focus:outline-none focus:border-gray-400 transition-colors text-base"
+                                placeholder="e.g., Chapter 1 Review"
+                            />
+                        </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label
-                            htmlFor="startPage"
-                            className="block text-sm font-medium text-gray-700 mb-1"
+                        <div>
+                            <label
+                                htmlFor="pdfFile"
+                                className="block mb-2 text-sm font-semibold text-gray-700"
+                            >
+                                Upload PDF Notes <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                                type="file"
+                                id="pdfFile"
+                                onChange={handleFileChange}
+                                accept=".pdf"
+                                required
+                                className="block w-full text-sm text-gray-500
+                           file:mr-4 file:py-2 file:px-4
+                           file:rounded file:border-0
+                           file:text-sm file:font-semibold
+                           file:bg-purple-50 file:text-purple-700
+                           hover:file:bg-purple-100 file:cursor-pointer"
+                            />
+                            {pdfFile && (
+                                <p className="text-xs text-gray-500 mt-1">
+                                    Selected: {pdfFile.name}
+                                </p>
+                            )}
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <div>
+                                <label
+                                    htmlFor="startPage"
+                                    className="block mb-2 text-sm font-semibold text-gray-700"
+                                >
+                                    Start Page
+                                </label>
+                                <input
+                                    type="number"
+                                    id="startPage"
+                                    value={startPage}
+                                    onChange={(e) => setStartPage(e.target.value)}
+                                    min="1"
+                                    className="w-full px-4 py-2.5 border border-gray-300 rounded focus:outline-none focus:border-gray-400 transition-colors text-base"
+                                    placeholder="Optional"
+                                />
+                            </div>
+                            <div>
+                                <label
+                                    htmlFor="endPage"
+                                    className="block mb-2 text-sm font-semibold text-gray-700"
+                                >
+                                    End Page
+                                </label>
+                                <input
+                                    type="number"
+                                    id="endPage"
+                                    value={endPage}
+                                    onChange={(e) => setEndPage(e.target.value)}
+                                    min={startPage || "1"}
+                                    className="w-full px-4 py-2.5 border border-gray-300 rounded focus:outline-none focus:border-gray-400 transition-colors text-base"
+                                    placeholder="Optional"
+                                />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label
+                                htmlFor="maxTotalQuestions"
+                                className="block mb-2 text-sm font-semibold text-gray-700"
+                            >
+                                Total Questions
+                            </label>
+                            <input
+                                type="number"
+                                id="maxTotalQuestions"
+                                value={maxTotalQuestions}
+                                onChange={(e) => setMaxTotalQuestions(e.target.value)}
+                                min="1"
+                                className="w-full px-4 py-2.5 border border-gray-300 rounded focus:outline-none focus:border-gray-400 transition-colors text-base"
+                                placeholder="10"
+                            />
+                        </div>
+
+                        {error && (
+                            <div className="p-3 bg-red-50 border border-red-200 rounded">
+                                <p className="text-red-600 text-sm">{error}</p>
+                            </div>
+                        )}
+                        {successMessage && (
+                            <div className="p-3 bg-green-50 border border-green-200 rounded">
+                                <p className="text-green-600 text-sm">{successMessage}</p>
+                            </div>
+                        )}
+
+                        <button
+                            type="submit"
+                            disabled={
+                                isSubmitting || authIsLoading || !isAuthenticated
+                            }
+                            className="w-full py-3 px-6 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            Start Page (Optional - processes from page 1 if
-                            blank)
-                        </label>
-                        <input
-                            type="number"
-                            id="startPage"
-                            value={startPage}
-                            onChange={(e) => setStartPage(e.target.value)}
-                            min="1"
-                            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                            placeholder="e.g., 5"
-                        />
-                    </div>
-                    <div>
-                        <label
-                            htmlFor="endPage"
-                            className="block text-sm font-medium text-gray-700 mb-1"
-                        >
-                            End Page (Optional - processes to end if blank)
-                        </label>
-                        <input
-                            type="number"
-                            id="endPage"
-                            value={endPage}
-                            onChange={(e) => setEndPage(e.target.value)}
-                            min={startPage || "1"}
-                            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                            placeholder="e.g., 20"
-                        />
-                    </div>
+                            {isSubmitting ? "Creating..." : "Create Kahoot"}
+                        </button>
+                    </form>
                 </div>
-
-                <div>
-                    <label
-                        htmlFor="maxTotalQuestions"
-                        className="block text-sm font-medium text-gray-700 mb-1"
-                    >
-                        Total Questions to Generate (Default: 10)
-                    </label>
-                    <input
-                        type="number"
-                        id="maxTotalQuestions"
-                        value={maxTotalQuestions}
-                        onChange={(e) => setMaxTotalQuestions(e.target.value)}
-                        min="1"
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                        placeholder="Default: 10"
-                    />
-                </div>
-
-                {error && (
-                    <p className="text-sm text-red-600 bg-red-100 p-3 rounded-md">
-                        {error}
-                    </p>
-                )}
-                {successMessage && (
-                    <p className="text-sm text-green-600 bg-green-100 p-3 rounded-md">
-                        {successMessage}
-                    </p>
-                )}
-
-                <div className="flex justify-end pt-4">
-                    <button
-                        type="submit"
-                        disabled={
-                            isSubmitting || authIsLoading || !isAuthenticated
-                        }
-                        className="inline-flex justify-center py-2 px-6 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
-                    >
-                        {isSubmitting ? "Creating..." : "Create Kahoot"}
-                    </button>
-                </div>
-            </form>
-        </div>
+            </div>
+        </main>
     );
 }
