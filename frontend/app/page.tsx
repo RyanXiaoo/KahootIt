@@ -1,125 +1,80 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { loginUser } from "../lib/api";
-import { useAuth } from "../context/AuthContext";
-import Image from "next/image";
+import Link from "next/link";
+
 export default function HomePage() {
-    const [username, setUsername] = useState("");
-    const [password, setPassword] = useState("");
+    const [pin, setPin] = useState("");
     const [error, setError] = useState("");
-    const [isLoading, setIsLoading] = useState(false);
     const router = useRouter();
-    const {
-        login: authLogin,
-        isLoading: authIsLoading,
-        isAuthenticated,
-    } = useAuth();
 
-    useEffect(() => {
-        if (!authIsLoading && isAuthenticated) {
-            router.push("/my-kahoots");
-        }
-    }, [authIsLoading, isAuthenticated, router]);
-
-    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
+    const handlePinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        // Only allow numbers
+        const value = e.target.value.replace(/\D/g, "");
+        setPin(value);
         setError("");
-        setIsLoading(true);
-
-        try {
-            const data = await loginUser(username, password);
-            console.log("Login successful, token:", data.access_token);
-
-            authLogin(data.access_token);
-            router.push("/my-kahoots");
-        } catch (err) {
-            if (err instanceof Error) {
-                setError(err.message);
-            } else {
-                setError("An unknown error occurred.");
-            }
-        } finally {
-            setIsLoading(false);
-        }
     };
 
-    if (authIsLoading || isAuthenticated) {
-        return (
-            <main className="flex flex-col items-center justify-center min-h-screen p-4 bg-indigo-700">
-                <p className="text-white">Loading...</p>
-            </main>
-        );
-    }
+    const handleJoinGame = (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        
+        if (!pin || pin.length < 4) {
+            setError("Please enter a valid game PIN");
+            return;
+        }
+
+        // Navigate to game lobby
+        router.push(`/play/${pin}/lobby`);
+    };
 
     return (
-        <main className="flex flex-col items-center justify-center min-h-screen p-4">
-            <div className="text-center mb-10">
-                <h1 className="text-5xl sm:text-6xl md:text-7xl font-extrabold text-white tracking-tight">
-                    KahootIt!
-                </h1>
-                <p className="mt-3 text-lg sm:text-xl text-indigo-200">
-                    Turn your PDF notes into Kahoots
-                </p>
+        <main className="relative flex flex-col items-center justify-center min-h-screen p-4 overflow-hidden">
+            {/* Sign In Button - Top Right */}
+            <div className="absolute top-6 right-6 z-10">
+                <Link
+                    href="/login"
+                    className="bg-white/20 hover:bg-white/30 backdrop-blur-sm px-4 py-2 rounded-full border border-white/30 transition cursor-pointer inline-block"
+                >
+                    <span className="text-white font-semibold text-sm">Sign In</span>
+                </Link>
             </div>
 
-            <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-2xl shadow-xl">
-                <form onSubmit={handleSubmit} className="flex flex-col">
-                    <div className="space-y-0">
+            {/* Main Content */}
+            <div className="w-full max-w-md mx-auto flex flex-col items-center">
+                {/* Kahoot Logo */}
+                <h1 className="text-7xl font-black text-white mb-16 tracking-tight" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                    KahootIt!
+                </h1>
+
+                {/* PIN Entry Card */}
+                <div className="w-full bg-white rounded-2xl shadow-2xl p-6">
+                    <form onSubmit={handleJoinGame} className="space-y-3">
                         <div>
-                            <label
-                                htmlFor="username"
-                                className="block mb-2 text-sm font-medium text-gray-700"
-                            >
-                                Username:
-                            </label>
                             <input
                                 type="text"
-                                id="username"
-                                value={username}
-                                onChange={(e) => setUsername(e.target.value)}
-                                required
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                id="pin"
+                                inputMode="numeric"
+                                value={pin}
+                                onChange={handlePinChange}
+                                className="w-full text-center text-2xl font-bold px-4 py-2 border-2 border-gray-200 rounded focus:outline-none focus:border-gray-300 transition-colors placeholder:text-gray-400 placeholder:text-2xl placeholder:font-semibold"
+                                placeholder="Game PIN"
+                                autoFocus
                             />
+                            {error && (
+                                <p className="text-red-500 text-xs text-center mt-2">
+                                    {error}
+                                </p>
+                            )}
                         </div>
-                        <div>
-                            <label
-                                htmlFor="password"
-                                className="block mt-3 mb-2 text-sm font-medium text-gray-700"
-                            >
-                                Password:
-                            </label>
-                            <input
-                                type="password"
-                                id="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                required
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                            />
-                        </div>
-                    </div>
-                    <div className="h-2 text-sm my-2">
-                        {error && <p className="text-red-600 ">{error}</p>}
-                    </div>
-                    <button
-                        type="submit"
-                        disabled={isLoading}
-                        className="w-full mt-3 py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition duration-150 ease-in-out"
-                    >
-                        {isLoading ? "Logging in..." : "Login"}
-                    </button>
-                </form>
 
-                <div className="mt-6 text-sm text-center text-gray-600">
-                    Don&apos;t have an account?{" "}
-                    <a
-                        href="/register"
-                        className="font-medium text-indigo-600 hover:text-indigo-500 hover:underline"
-                    >
-                        Register here
-                    </a>
+                        <button
+                            type="submit"
+                            className="w-full py-3 px-6 bg-black hover:bg-gray-900 text-white font-bold rounded transition-colors duration-200"
+                        >
+                            Enter
+                        </button>
+                    </form>
                 </div>
             </div>
         </main>
