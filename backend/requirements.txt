@@ -1,9 +1,27 @@
-PyMuPDF
-openai
-python-dotenv
-fastapi
-uvicorn[standard]
-SQLAlchemy
-aiosqlite
-python-jose[cryptography]
-passlib[bcrypt] 
+# PDF Processing
+PyMuPDF>=1.23.0
+
+# AI - OpenAI
+openai>=1.0.0
+# Note: google-generativeai removed - we use OpenAI now
+
+# Environment
+python-dotenv>=1.0.0
+
+# Web Framework
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+python-multipart>=0.0.6  # Required for file uploads (FastAPI Form/File)
+
+# Database
+SQLAlchemy>=2.0.0
+aiosqlite>=0.19.0
+
+# Authentication
+python-jose[cryptography]>=3.3.0
+passlib>=1.7.4
+bcrypt==3.2.2  # CRITICAL: Pin to 3.2.2 for passlib compatibility (4.0+ breaks passlib)
+
+# WebSocket for real-time multiplayer
+python-socketio>=5.11.0
+aiofiles>=23.2.0 

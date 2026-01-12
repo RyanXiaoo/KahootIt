@@ -12,6 +12,8 @@ import models
 from database import engine, get_db
 import auth
 from auth import get_current_user
+import game_service
+from websocket_manager import socket_app
 
 # Create database tables if they don't exist
 # This should be called once when the application starts.
@@ -248,6 +250,204 @@ async def get_quiz_questions(game_id: int, db: Session = Depends(get_db)):
         "num_questions": len(questions_response),
         "questions": questions_response
     }
+
+# --- Game Session API Endpoints (for real-time multiplayer) ---
+
+class GameSessionCreate(BaseModel):
+    quiz_id: int
+
+class GameSessionResponse(BaseModel):
+    id: int
+    pin: str
+    quiz_id: int
+    quiz_title: str
+    status: str
+    created_at: datetime
+
+@app.post("/api/game/create", response_model=GameSessionResponse, tags=["Game"], summary="Create a new game session")
+async def create_game(
+    game_data: GameSessionCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """
+    Create a new game session for a quiz.
+    Returns a unique PIN that players can use to join.
+    """
+    try:
+        game_session = game_service.create_game_session(
+            db=db,
+            quiz_id=game_data.quiz_id,
+            host_id=current_user.id
+        )
+        
+        return GameSessionResponse(
+            id=game_session.id,
+            pin=game_session.pin,
+            quiz_id=game_session.quiz_id,
+            quiz_title=game_session.quiz.title,
+            status=game_session.status,
+            created_at=game_session.created_at
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to create game session: {str(e)}")
+
+@app.get("/api/game/{pin}/info", tags=["Game"], summary="Get game session info by PIN")
+async def get_game_info(pin: str, db: Session = Depends(get_db)):
+    """
+    Get basic information about a game session using its PIN.
+    Public endpoint - no authentication required.
+    """
+    game_session = game_service.validate_pin(db, pin)
+    
+    if not game_session:
+        raise HTTPException(status_code=404, detail="Game not found or no longer accepting players")
+    
+    return {
+        "pin": game_session.pin,
+        "quiz_id": game_session.quiz_id,
+        "quiz_title": game_session.quiz.title,
+        "status": game_session.status,
+        "question_count": len(game_session.quiz.questions),
+        "current_question_index": game_session.current_question_index
+    }
+
+@app.post("/api/game/{pin}/start", tags=["Game"], summary="Start a game session")
+async def start_game_session(
+    pin: str,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """
+    Start a game session. Only the host can start the game.
+    """
+    game_session = db.query(models.GameSession).filter(
+        models.GameSession.pin == pin,
+        models.GameSession.host_id == current_user.id
+    ).first()
+    
+    if not game_session:
+        raise HTTPException(status_code=404, detail="Game not found or you're not the host")
+    
+    success = game_service.start_game(db, game_session.id)
+    
+    if not success:
+        raise HTTPException(status_code=400, detail="Game cannot be started")
+    
+    return {"message": "Game started", "pin": pin}
+
+@app.post("/api/game/{pin}/answer", tags=["Game"], summary="Submit an answer")
+async def submit_answer(
+    pin: str,
+    player_name: str = Form(...),
+    question_id: int = Form(...),
+    answer_index: int = Form(...),
+    time_taken_ms: int = Form(...),
+    db: Session = Depends(get_db)
+):
+    """
+    Submit a player's answer to a question.
+    Public endpoint - no authentication required for players.
+    """
+    game_session = game_service.validate_pin(db, pin)
+    
+    if not game_session:
+        raise HTTPException(status_code=404, detail="Game not found")
+    
+    if game_session.status != "active":
+        raise HTTPException(status_code=400, detail="Game is not currently active")
+    
+    try:
+        response = game_service.record_answer(
+            db=db,
+            game_session_id=game_session.id,
+            player_name=player_name,
+            question_id=question_id,
+            answer_index=answer_index,
+            time_taken_ms=time_taken_ms
+        )
+        
+        return {
+            "points_earned": response.points_earned,
+            "is_correct": response.points_earned > 0
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.get("/api/game/{pin}/leaderboard", tags=["Game"], summary="Get current leaderboard")
+async def get_leaderboard(pin: str, db: Session = Depends(get_db)):
+    """
+    Get the current leaderboard for a game session.
+    Public endpoint.
+    """
+    game_session = db.query(models.GameSession).filter(models.GameSession.pin == pin).first()
+    
+    if not game_session:
+        raise HTTPException(status_code=404, detail="Game not found")
+    
+    leaderboard = game_service.get_leaderboard(db, game_session.id)
+    
+    return {
+        "pin": pin,
+        "leaderboard": leaderboard
+    }
+
+@app.get("/api/game/{pin}/question/{question_id}/results", tags=["Game"], summary="Get question results")
+async def get_question_results(
+    pin: str,
+    question_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """
+    Get answer distribution for a question (for host view).
+    Only the host can access this.
+    """
+    game_session = db.query(models.GameSession).filter(
+        models.GameSession.pin == pin,
+        models.GameSession.host_id == current_user.id
+    ).first()
+    
+    if not game_session:
+        raise HTTPException(status_code=404, detail="Game not found or you're not the host")
+    
+    results = game_service.get_question_results(db, game_session.id, question_id)
+    
+    return results
+
+@app.post("/api/game/{pin}/end", tags=["Game"], summary="End a game session")
+async def end_game_session(
+    pin: str,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """
+    End a game session. Only the host can end the game.
+    """
+    game_session = db.query(models.GameSession).filter(
+        models.GameSession.pin == pin,
+        models.GameSession.host_id == current_user.id
+    ).first()
+    
+    if not game_session:
+        raise HTTPException(status_code=404, detail="Game not found or you're not the host")
+    
+    success = game_service.end_game(db, game_session.id)
+    
+    if not success:
+        raise HTTPException(status_code=400, detail="Failed to end game")
+    
+    final_leaderboard = game_service.get_leaderboard(db, game_session.id)
+    
+    return {
+        "message": "Game ended",
+        "final_leaderboard": final_leaderboard
+    }
+
+# Mount WebSocket app
+app.mount("/socket.io", socket_app)
 
 if __name__ == "__main__":
     import uvicorn
