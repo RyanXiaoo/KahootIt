@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { registerUser } from "../../lib/api"; // Adjusted path for being one level deeper
+import Link from "next/link";
+import { registerUser } from "../../lib/api";
 
 export default function RegisterPage() {
     const [username, setUsername] = useState("");
@@ -27,10 +28,12 @@ export default function RegisterPage() {
         try {
             const data = await registerUser(username, password);
             setSuccessMessage(
-                `User ${data.username} registered successfully! You can now login.`
+                `Account created successfully! Redirecting to login...`
             );
-            // Optionally redirect to login page after a delay or directly
-            // router.push("/"); // Redirect to login page (homepage)
+            // Redirect to login after 2 seconds
+            setTimeout(() => {
+                router.push("/login");
+            }, 2000);
         } catch (err) {
             if (err instanceof Error) {
                 setError(err.message);
@@ -44,21 +47,31 @@ export default function RegisterPage() {
 
     return (
         <main className="flex flex-col items-center justify-center min-h-screen p-4">
-            <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-xl shadow-lg">
-                <div className="text-center">
-                    <h1 className="text-3xl font-bold text-gray-800">
-                        Create an Account
+            {/* Back Link */}
+            <Link
+                href="/"
+                className="absolute top-6 left-6 text-white hover:text-white/80 transition-colors flex items-center gap-1 text-sm"
+            >
+                <span>←</span> Back
+            </Link>
+
+            <div className="w-full max-w-md mx-auto flex flex-col items-center">
+                {/* Title */}
+                <div className="text-center mb-8">
+                    <h1 className="text-6xl font-black text-white mb-3" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                        Register
                     </h1>
                 </div>
 
-                <form onSubmit={handleSubmit} className="flex flex-col">
-                    <div className="space-y-0">
+                {/* Register Card */}
+                <div className="w-full bg-white rounded-2xl shadow-2xl p-8">
+                    <form onSubmit={handleSubmit} className="space-y-5">
                         <div>
                             <label
                                 htmlFor="username"
-                                className="block mb-2 text-sm font-medium text-gray-700"
+                                className="block mb-2 text-sm font-semibold text-gray-700"
                             >
-                                Username:
+                                Username
                             </label>
                             <input
                                 type="text"
@@ -66,16 +79,17 @@ export default function RegisterPage() {
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
                                 required
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                className="w-full px-4 py-2.5 border border-gray-300 rounded focus:outline-none focus:border-gray-400 transition-colors text-base"
                                 placeholder="Choose a username"
                             />
                         </div>
-                        <div className="mt-3">
+                        
+                        <div>
                             <label
                                 htmlFor="password"
-                                className="block mb-2 text-sm font-medium text-gray-700"
+                                className="block mb-2 text-sm font-semibold text-gray-700"
                             >
-                                Password:
+                                Password
                             </label>
                             <input
                                 type="password"
@@ -83,56 +97,60 @@ export default function RegisterPage() {
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 required
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                className="w-full px-4 py-2.5 border border-gray-300 rounded focus:outline-none focus:border-gray-400 transition-colors text-base"
                                 placeholder="Create a password"
                             />
                         </div>
-                        <div className="mt-3">
+                        
+                        <div>
                             <label
                                 htmlFor="confirmPassword"
-                                className="block mb-2 text-sm font-medium text-gray-700"
+                                className="block mb-2 text-sm font-semibold text-gray-700"
                             >
-                                Confirm Password:
+                                Confirm Password
                             </label>
                             <input
                                 type="password"
                                 id="confirmPassword"
                                 value={confirmPassword}
-                                onChange={(e) =>
-                                    setConfirmPassword(e.target.value)
-                                }
+                                onChange={(e) => setConfirmPassword(e.target.value)}
                                 required
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                className="w-full px-4 py-2.5 border border-gray-300 rounded focus:outline-none focus:border-gray-400 transition-colors text-base"
                                 placeholder="Confirm your password"
                             />
                         </div>
-                    </div>
-
-                    {/* Error/Success message area */}
-                    <div className="h-6 text-sm">
-                        {error && <p className="text-red-600">{error}</p>}
-                        {successMessage && (
-                            <p className="text-green-600">{successMessage}</p>
+                        
+                        {error && (
+                            <div className="p-3 bg-red-50 border border-red-200 rounded">
+                                <p className="text-red-600 text-sm">{error}</p>
+                            </div>
                         )}
-                    </div>
+                        {successMessage && (
+                            <div className="p-3 bg-green-50 border border-green-200 rounded">
+                                <p className="text-green-600 text-sm">{successMessage}</p>
+                            </div>
+                        )}
 
-                    <button
-                        type="submit"
-                        disabled={isLoading}
-                        className="w-full mt-3 py-2 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-md shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition duration-150 ease-in-out"
-                    >
-                        {isLoading ? "Registering..." : "Register"}
-                    </button>
-                </form>
+                        <button
+                            type="submit"
+                            disabled={isLoading}
+                            className="w-full py-3 px-6 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {isLoading ? "Creating account..." : "Register"}
+                        </button>
 
-                <div className="mt-6 text-sm text-center text-gray-600">
-                    Already have an account?{" "}
-                    <a
-                        href="/" // Link to homepage (login page)
-                        className="font-medium text-indigo-600 hover:text-indigo-500 hover:underline"
-                    >
-                        Login here
-                    </a>
+                        <div className="pt-4 border-t border-gray-200 text-center">
+                            <p className="text-sm text-gray-600">
+                                Already have an account?{" "}
+                                <Link
+                                    href="/login"
+                                    className="text-purple-600 hover:text-purple-700 font-semibold"
+                                >
+                                    Login here
+                                </Link>
+                            </p>
+                        </div>
+                    </form>
                 </div>
             </div>
         </main>
