@@ -1,15 +1,36 @@
+# Root level gitignore
+
+# Environment files
 .env
-__pycache__/
-backend/kahootit.db
+.env.local
+.env*.local
 
-# Optional: Add if you don't want to version editor-specific settings
-# .vscode/
-# .idea/
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.cursor/
 
-# Optional: If you create virtual environments inside your project folder
-# venv/
-# .venv/
-# env/
-# .env/
-# ENV/
-# VENV/ 
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Database files
+*.db
+*.sqlite
+*.db.backup
+*.sqlite.backup
+
+# Node modules (shouldn't be in backend but just in case)
+backend/node_modules/
+backend/package.json
+backend/package-lock.json
+
+# Sample/test files
+backend/sample.pdf
+backend/test_*.py
