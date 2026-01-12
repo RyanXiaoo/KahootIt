@@ -1,14 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { useAuth } from "../context/AuthContext"; // Adjust path if your context is elsewhere
+import { useAuth } from "../context/AuthContext";
+import { usePathname } from "next/navigation";
 
 export default function Navbar() {
     const { isAuthenticated, logout, isLoading } = useAuth();
+    const pathname = usePathname();
 
     const handleLogout = () => {
-        logout(); // AuthContext's logout should handle redirecting to login page ('/')
+        logout();
     };
+
+    // Don't show navbar on host pages or player lobby pages
+    if (pathname?.startsWith('/host/') || pathname?.startsWith('/play/')) {
+        return null;
+    }
 
     // If loading auth state, or if user is not authenticated, render nothing.
     if (isLoading || !isAuthenticated) {
@@ -19,14 +26,13 @@ export default function Navbar() {
     return (
         <header className="bg-custom-gray text-white p-4 shadow-lg sticky top-0 z-50">
             <div className="container mx-auto flex justify-between items-center">
-                {/* Logo - Far Left - Non-navigational when logged in */}
-                <a
-                    href="#"
-                    onClick={(e) => e.preventDefault()}
-                    className="px-24 text-2xl font-extrabold transition-colors cursor-default"
+                {/* Logo - Far Left - Links to dashboard when logged in */}
+                <Link
+                    href="/my-kahoots"
+                    className="px-24 text-2xl font-extrabold transition-colors hover:text-indigo-200"
                 >
                     KahootIt!
-                </a>
+                </Link>
 
                 {/* Navigation Links - Far Right */}
                 <nav className="px-24">
