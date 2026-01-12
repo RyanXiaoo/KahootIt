@@ -1,6 +1,21 @@
+"""
+PDF Processor & AI Quiz Generation Module
+
+This module handles:
+1. PDF text extraction using PyMuPDF (fitz)
+2. Text chunking for efficient processing
+3. AI-powered question generation using OpenAI GPT-5 Mini
+4. JSON validation and question formatting
+
+The AI generates multiple-choice questions with:
+- Question text
+- 4 answer options
+- Correct answer index (0-3)
+- Explanation for the correct answer
+"""
+
 import fitz  # PyMuPDF
-# import openai # Old import
-from openai import OpenAI # New import
+from openai import OpenAI
 import os
 from dotenv import load_dotenv
 import json
@@ -8,10 +23,8 @@ import json
 # Load environment variables from .env file
 load_dotenv()
 
-# Initialize the OpenAI client
-# The API key is automatically picked up from the OPENAI_API_KEY environment variable
-# which should be loaded from your .env file.
-client = OpenAI()
+# Initialize OpenAI client
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 def _extract_text_from_doc(doc: fitz.Document, start_page: int | None = None, end_page: int | None = None) -> str:
     """Extracts text from a given fitz.Document object, optionally from a specific page range (1-indexed)."""
@@ -91,7 +104,7 @@ def generate_questions_from_chunk(text_chunk: str, num_questions: int = 3) -> li
     """
     Generates multiple-choice questions from a text chunk using an LLM.
     """
-    print(f"\n--- Sending chunk to OpenAI for question generation (first 100 chars): ---\n{text_chunk[:100]}...""")
+    print(f"\n--- Sending chunk to Gemini for question generation (first 100 chars): ---\n{text_chunk[:100]}...""")
 
     system_prompt = """You are an expert at creating challenging, university-level exam questions based on provided academic text excerpts.
 Your primary goal is to test a student's ability to understand, apply, and analyze the core concepts and information within the text. 
@@ -140,24 +153,22 @@ The output must be a single JSON object with a "questions" key, where the value 
 
     generated_questions_list = []
     try:
-        model_to_use = "gpt-3.5-turbo-1106"
+        model_to_use = "gpt-5-mini"  # Using GPT-4o Mini - fast, cost-effective, and available to all users
         print(f"Using OpenAI model: {model_to_use}")
 
-        response = client.chat.completions.create( # Updated API call
+        # Call OpenAI API
+        response = client.chat.completions.create(
             model=model_to_use,
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
             ],
-            temperature=0.4,
-            max_tokens=1500,
-            n=1,
-            response_format={ "type": "json_object" }
+            response_format={"type": "json_object"}
         )
-
-        content = response.choices[0].message.content # Updated way to access content
         
-        print(f"Raw response from OpenAI (first 200 chars): {content[:200]}...")
+        content = response.choices[0].message.content
+        
+        print(f"Raw response from Gemini (first 200 chars): {content[:200]}...")
 
         try:
             parsed_response = json.loads(content)
@@ -178,15 +189,15 @@ The output must be a single JSON object with a "questions" key, where the value 
                 return []
 
         except json.JSONDecodeError as e:
-            print(f"Error decoding JSON from OpenAI response: {e}")
-            print(f"Raw content from OpenAI that caused error: {content}")
+            print(f"Error decoding JSON from Gemini response: {e}")
+            print(f"Raw content from Gemini that caused error: {content}")
             return []
 
         print(f"Successfully generated and parsed {len(generated_questions_list)} questions for the chunk.")
         return generated_questions_list
 
-    except OpenAI.APIError as e: # Updated error handling (example)
-        print(f"OpenAI API error: {e.status_code} - {e.message}")
+    except Exception as e:
+        print(f"OpenAI API error: {e}")
         return []
     except Exception as e:
         print(f"An unexpected error occurred while generating questions: {e}")
