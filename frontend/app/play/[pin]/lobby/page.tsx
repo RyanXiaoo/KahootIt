@@ -4,6 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { connectSocket, disconnectSocket } from "../../../../lib/websocket";
+import { API_BASE_URL } from "../../../../lib/api";
 import type { Socket } from "socket.io-client";
 
 interface GameInfo {
@@ -39,7 +40,7 @@ export default function LobbyPage() {
             }
 
             try {
-                const response = await fetch(`http://localhost:8000/api/game/${pin}/info`);
+                const response = await fetch(`${API_BASE_URL}/api/game/${pin}/info`);
                 
                 if (!response.ok) {
                     if (response.status === 404) {

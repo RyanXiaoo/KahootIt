@@ -3,6 +3,7 @@
 import { useParams, useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import { connectSocket, disconnectSocket } from "../../../../lib/websocket";
+import { API_BASE_URL } from "../../../../lib/api";
 import type { Socket } from "socket.io-client";
 
 interface Question {
@@ -117,7 +118,7 @@ export default function GamePage() {
 
         // Submit answer to backend
         try {
-            const response = await fetch(`http://localhost:8000/api/game/${pin}/answer`, {
+            const response = await fetch(`${API_BASE_URL}/api/game/${pin}/answer`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',

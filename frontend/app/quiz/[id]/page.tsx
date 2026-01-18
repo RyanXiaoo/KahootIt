@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { useAuth } from "../../../context/AuthContext"; // Adjust path if context is elsewhere
-import StudyModeCard from "../../../components/StudyModeCard"; // Import the new component
-import FlashcardInterface from "../../../components/FlashcardInterface"; // Import FlashcardInterface
-import LearnInterface from "../../../components/LearnInterface"; // Import LearnInterface
+import { useAuth } from "../../../context/AuthContext";
+import { API_BASE_URL } from "../../../lib/api";
+import StudyModeCard from "../../../components/StudyModeCard";
+import FlashcardInterface from "../../../components/FlashcardInterface";
+import LearnInterface from "../../../components/LearnInterface";
 
 // Define interfaces for the data structures
 interface Question {
@@ -59,7 +60,7 @@ export default function QuizDetailPage() {
             setError(null);
             try {
                 const response = await fetch(
-                    `http://localhost:8000/game/${quizId}`,
+                    `${API_BASE_URL}/game/${quizId}`,
                     {
                         method: "GET",
                         headers: {
@@ -155,7 +156,7 @@ export default function QuizDetailPage() {
         setIsCreatingGame(true);
 
         try {
-            const response = await fetch('http://localhost:8000/api/game/create', {
+            const response = await fetch(`${API_BASE_URL}/api/game/create`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

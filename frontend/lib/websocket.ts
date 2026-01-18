@@ -3,7 +3,16 @@
  */
 import { io, Socket } from 'socket.io-client';
 
-const SOCKET_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+// Use dynamic host for WiFi play - works on localhost AND network devices
+const getSocketURL = () => {
+    if (typeof window !== 'undefined') {
+        const hostname = window.location.hostname;
+        return `http://${hostname}:8000`;
+    }
+    return 'http://localhost:8000';
+};
+
+const SOCKET_URL = getSocketURL();
 
 let socket: Socket | null = null;
 

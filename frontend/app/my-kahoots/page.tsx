@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-// import Link from "next/link"; // No longer needed here if QuizTile handles its own link
 import ProtectedRoute from "../../components/ProtectedRoute";
 import { useAuth } from "../../context/AuthContext";
-import QuizTile from "../../components/QuizTile"; // Ensure this path is correct
+import { API_BASE_URL } from "../../lib/api";
+import QuizTile from "../../components/QuizTile";
 
 // Define the structure for a quiz fetched from the API
 interface ApiQuiz {
@@ -33,10 +33,7 @@ export default function MyKahootsPage() {
     useEffect(() => {
         const fetchQuizzes = async () => {
             console.log("Auth Token being sent:", token); // Check if token is present and looks like a JWT
-            console.log(
-                "Fetching from URL:",
-                "http://localhost:8000/quizzes/my"
-            );
+            // Fetching quizzes for current user
             console.log("Request Headers:", {
                 "Content-Type": "application/json",
                 Authorization: `Bearer ${token}`,
@@ -52,7 +49,7 @@ export default function MyKahootsPage() {
 
             try {
                 const response = await fetch(
-                    "http://localhost:8000/quizzes/my",
+                    `${API_BASE_URL}/quizzes/my`,
                     {
                         method: "GET",
                         headers: {

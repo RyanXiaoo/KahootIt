@@ -2,6 +2,7 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
+import { API_BASE_URL } from "../../../../lib/api";
 
 interface LeaderboardPlayer {
     rank: number;
@@ -33,7 +34,7 @@ export default function PlayerResultsPage() {
 
         const fetchResults = async () => {
             try {
-                const response = await fetch(`http://localhost:8000/api/game/${pin}/leaderboard`);
+                const response = await fetch(`${API_BASE_URL}/api/game/${pin}/leaderboard`);
                 if (response.ok) {
                     const data = await response.json();
                     const leaderboard = data.leaderboard || [];

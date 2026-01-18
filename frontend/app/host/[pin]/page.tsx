@@ -4,6 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../../../context/AuthContext";
 import { connectSocket, disconnectSocket } from "../../../lib/websocket";
+import { API_BASE_URL } from "../../../lib/api";
 import type { Socket } from "socket.io-client";
 
 interface GameInfo {
@@ -55,7 +56,7 @@ export default function HostLobbyPage() {
     useEffect(() => {
         const fetchGameInfo = async () => {
             try {
-                const response = await fetch(`http://localhost:8000/api/game/${pin}/info`);
+                const response = await fetch(`${API_BASE_URL}/api/game/${pin}/info`);
                 
                 if (!response.ok) {
                     throw new Error('Game not found');
@@ -127,7 +128,7 @@ export default function HostLobbyPage() {
 
         try {
             // Fetch quiz questions
-            const quizResponse = await fetch(`http://localhost:8000/game/${gameInfo.quiz_id}`);
+            const quizResponse = await fetch(`${API_BASE_URL}/game/${gameInfo.quiz_id}`);
             if (!quizResponse.ok) {
                 throw new Error('Failed to load questions');
             }
@@ -136,7 +137,7 @@ export default function HostLobbyPage() {
 
             // Start the game (only if in lobby status)
             if (gameInfo.status === 'lobby') {
-                const response = await fetch(`http://localhost:8000/api/game/${pin}/start`, {
+                const response = await fetch(`${API_BASE_URL}/api/game/${pin}/start`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -214,7 +215,7 @@ export default function HostLobbyPage() {
         // Submit incorrect answers for them
         for (const playerName of unansweredPlayers) {
             try {
-                await fetch(`http://localhost:8000/api/game/${pin}/answer`, {
+                await fetch(`${API_BASE_URL}/api/game/${pin}/answer`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',
@@ -265,7 +266,7 @@ export default function HostLobbyPage() {
 
     const fetchLeaderboard = async () => {
         try {
-            const response = await fetch(`http://localhost:8000/api/game/${pin}/leaderboard`);
+            const response = await fetch(`${API_BASE_URL}/api/game/${pin}/leaderboard`);
             if (response.ok) {
                 const data = await response.json();
                 setLeaderboard(data.leaderboard || []);
@@ -291,7 +292,7 @@ export default function HostLobbyPage() {
         if (!socketRef.current) return;
 
         try {
-            const response = await fetch(`http://localhost:8000/api/game/${pin}/end`, {
+            const response = await fetch(`${API_BASE_URL}/api/game/${pin}/end`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

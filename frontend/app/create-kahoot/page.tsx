@@ -3,6 +3,7 @@
 import { useState, FormEvent, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../../context/AuthContext";
+import { API_BASE_URL } from "../../lib/api";
 
 export default function CreateKahootPage() {
     const { token, isLoading: authIsLoading, isAuthenticated } = useAuth();
@@ -75,7 +76,7 @@ export default function CreateKahootPage() {
 
         try {
             const response = await fetch(
-                "http://localhost:8000/upload-notes/",
+                `${API_BASE_URL}/upload-notes/`,
                 {
                     method: "POST",
                     headers: {
