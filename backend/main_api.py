@@ -26,12 +26,12 @@ app = FastAPI(
     version="0.1.0",
 )
 
-# CORS Configuration
+# CORS Configuration - Allow local network access for WiFi play
 origins = [
-    "http://localhost:3000",  # Standard localhost for Next.js dev
-    "http://127.0.0.1:3000", # Another common localhost for Next.js dev
-    "http://10.120.3.77:3000", # The origin shown in your error message
-    # Add any other origins your frontend might be served from (e.g., deployed URL)
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "*"  # Allow all origins for local network play (friends on WiFi can join)
+    # For production deployment, replace * with specific domain
 ]
 
 app.add_middleware(
