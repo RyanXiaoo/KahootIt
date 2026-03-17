@@ -165,7 +165,7 @@ The output must be a single JSON object with a "questions" key, where the value 
             ],
             response_format={"type": "json_object"}
         )
-        
+
         content = response.choices[0].message.content
         
         print(f"Raw response from Gemini (first 200 chars): {content[:200]}...")
