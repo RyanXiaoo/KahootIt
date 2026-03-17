@@ -1,6 +1,7 @@
 """
 WebSocket Manager - Handles real-time communication for multiplayer games
 """
+import os
 import socketio
 from typing import Dict, Set, Optional
 import logging
@@ -8,9 +9,11 @@ import logging
 logger = logging.getLogger(__name__)
 
 # Create Socket.IO server
+_raw_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000")
+_sio_origins = [o.strip() for o in _raw_origins.split(",") if o.strip()]
 sio = socketio.AsyncServer(
     async_mode='asgi',
-    cors_allowed_origins='*',  # Configure based on your frontend URL
+    cors_allowed_origins=_sio_origins,
     logger=True,
     engineio_logger=True
 )
