@@ -459,4 +459,4 @@ app.mount("/socket.io", socket_app)
 if __name__ == "__main__":
     import uvicorn
     is_dev = os.getenv("ENVIRONMENT", "production").lower() == "development"
-    uvicorn.run("main_api:app", host="0.0.0.0", port=int(os.getenv("PORT", 8000)), reload=is_dev) 
+    uvicorn.run("main_api:app", host="0.0.0.0", port=int(os.getenv("PORT", 5000)), reload=is_dev) 
