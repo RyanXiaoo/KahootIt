@@ -1,4 +1,5 @@
-from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Depends
+import os
+from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 import uuid
@@ -6,6 +7,9 @@ from typing import List, Dict, Optional
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 from pydantic import BaseModel
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 from pdf_processor import generate_quiz_from_pdf_stream
 import models
@@ -16,9 +20,9 @@ import game_service
 from websocket_manager import socket_app
 
 # Create database tables if they don't exist
-# This should be called once when the application starts.
-# For more complex applications, you might use Alembic for migrations.
 models.Base.metadata.create_all(bind=engine)
+
+limiter = Limiter(key_func=get_remote_address)
 
 app = FastAPI(
     title="KahootIt API",
@@ -26,20 +30,19 @@ app = FastAPI(
     version="0.1.0",
 )
 
-# CORS Configuration - Allow local network access for WiFi play
-origins = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "*"  # Allow all origins for local network play (friends on WiFi can join)
-    # For production deployment, replace * with specific domain
-]
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# CORS Configuration
+_raw_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000")
+origins = [o.strip() for o in _raw_origins.split(",") if o.strip()]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins, 
-    allow_credentials=True, 
-    allow_methods=["*"],    
-    allow_headers=["*"],    
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # --- Pydantic Schemas for Users and Tokens ---
@@ -131,7 +134,9 @@ async def read_root():
     return {"message": "Welcome to the KahootIt API!"}
 
 @app.post("/upload-notes/", summary="Upload PDF and create a quiz (Login Required)", tags=["Quiz Management"])
+@limiter.limit("5/minute")
 async def create_quiz_from_upload(
+    request: Request,
     file: UploadFile = File(..., description="The PDF file to process."),
     quiz_custom_title: str = Form(..., description="Custom title for the quiz. This field is required."),
     start_page: Optional[int] = Form(None, description="1-indexed start page for processing."),
@@ -339,7 +344,9 @@ async def start_game_session(
     return {"message": "Game started", "pin": pin}
 
 @app.post("/api/game/{pin}/answer", tags=["Game"], summary="Submit an answer")
+@limiter.limit("30/minute")
 async def submit_answer(
+    request: Request,
     pin: str,
     player_name: str = Form(...),
     question_id: int = Form(...),
@@ -451,4 +458,5 @@ app.mount("/socket.io", socket_app)
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main_api:app", host="0.0.0.0", port=8000, reload=True) 
+    is_dev = os.getenv("ENVIRONMENT", "production").lower() == "development"
+    uvicorn.run("main_api:app", host="0.0.0.0", port=int(os.getenv("PORT", 8000)), reload=is_dev) 
