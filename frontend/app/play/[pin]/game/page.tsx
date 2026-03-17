@@ -19,13 +19,13 @@ export default function GamePage() {
     
     const [playerName, setPlayerName] = useState<string>("");
     const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
-    const [_questionIndex, setQuestionIndex] = useState<number>(0);
-    const [timeLeft, setTimeLeft] = useState<number>(20);
-    const [_selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
+    const [, setQuestionIndex] = useState<number>(0);
+    const [, setTimeLeft] = useState<number>(20);
+    const [, setSelectedAnswer] = useState<number | null>(null);
     const [hasAnswered, setHasAnswered] = useState(false);
     const [score, setScore] = useState<number>(0);
     const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
-    const [_timeLimit, setTimeLimit] = useState<number>(20000);
+    const [, setTimeLimit] = useState<number>(20000);
     const [showWaiting, setShowWaiting] = useState(false);
     const [pointsEarned, setPointsEarned] = useState<number>(0);
     

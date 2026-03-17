@@ -41,7 +41,7 @@ export default function HostLobbyPage() {
     const [timeLeft, setTimeLeft] = useState<number>(20);
     const [showingAnswer, setShowingAnswer] = useState(false);
     const [showingLeaderboard, setShowingLeaderboard] = useState(false);
-    const [leaderboard, setLeaderboard] = useState<any[]>([]);
+    const [leaderboard, setLeaderboard] = useState<{ player_name: string; total_points: number; rank?: number }[]>([]);
     const [showingFinalResults, setShowingFinalResults] = useState(false);
     const [show3rd, setShow3rd] = useState(false);
     const [show2nd, setShow2nd] = useState(false);
@@ -161,9 +161,9 @@ export default function HostLobbyPage() {
             setTimeout(() => {
                 showQuestion(0, quizData.questions);
             }, 2000);
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('Failed to start game:', err);
-            alert(`Failed to start game: ${err.message}`);
+            alert(`Failed to start game: ${err instanceof Error ? err.message : 'Unknown error'}`);
         }
     };
 
