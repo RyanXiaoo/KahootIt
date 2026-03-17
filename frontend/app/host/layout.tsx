@@ -1,5 +1,3 @@
-import { AuthProvider } from "../../context/AuthContext";
-
 export default function HostLayout({
     children,
 }: {

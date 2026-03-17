@@ -83,7 +83,7 @@ export default function LobbyPage() {
         });
 
         // Listen for game start
-        socket.on('game_started', (data: { pin: string }) => {
+        socket.on('game_started', () => {
             router.push(`/play/${pin}/game`);
         });
 

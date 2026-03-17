@@ -105,10 +105,10 @@ export default function CreateKahootPage() {
             setStartPage("");
             setEndPage("");
             setMaxTotalQuestions("10");
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error("Failed to create quiz:", err);
             setError(
-                err.message || "An unexpected error occurred. Please try again."
+                err instanceof Error ? err.message : "An unexpected error occurred. Please try again."
             );
         } finally {
             setIsSubmitting(false);

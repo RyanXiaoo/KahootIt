@@ -84,10 +84,10 @@ export default function MyKahootsPage() {
                 }));
 
                 setQuizzes(adaptedQuizzes);
-            } catch (err: any) {
+            } catch (err: unknown) {
                 console.error("Failed to fetch quizzes:", err);
                 setError(
-                    err.message ||
+                    err instanceof Error ? err.message :
                         "An unexpected error occurred while fetching your quizzes."
                 );
             } finally {

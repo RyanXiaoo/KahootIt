@@ -19,13 +19,13 @@ export default function GamePage() {
     
     const [playerName, setPlayerName] = useState<string>("");
     const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
-    const [questionIndex, setQuestionIndex] = useState<number>(0);
+    const [_questionIndex, setQuestionIndex] = useState<number>(0);
     const [timeLeft, setTimeLeft] = useState<number>(20);
-    const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
+    const [_selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
     const [hasAnswered, setHasAnswered] = useState(false);
     const [score, setScore] = useState<number>(0);
     const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
-    const [timeLimit, setTimeLimit] = useState<number>(20000);
+    const [_timeLimit, setTimeLimit] = useState<number>(20000);
     const [showWaiting, setShowWaiting] = useState(false);
     const [pointsEarned, setPointsEarned] = useState<number>(0);
     
@@ -74,7 +74,7 @@ export default function GamePage() {
         });
 
         // Listen for game end
-        socket.on('game_ended', (data: { final_leaderboard: any[] }) => {
+        socket.on('game_ended', () => {
             router.push(`/play/${pin}/results`);
         });
 
