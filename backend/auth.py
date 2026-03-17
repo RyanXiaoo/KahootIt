@@ -17,7 +17,10 @@ from models import User as UserModel # Alias to avoid naming conflict
 load_dotenv() # Load environment variables from .env
 
 # Configuration
-SECRET_KEY = os.getenv("SECRET_KEY", "your_super_secret_key_please_change_it")
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY:
+    raise ValueError("SECRET_KEY environment variable must be set. Generate with: python -c \"import secrets; print(secrets.token_hex(32))\"")
+
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
