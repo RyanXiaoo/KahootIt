@@ -24,8 +24,6 @@ const optionColors = [
     "bg-green-500 hover:bg-green-600", // Green
 ];
 
-const optionSymbols = ["▲", "◆", "●", "■"]; // Triangle, Diamond, Circle, Square (example symbols)
-
 export default function LearnInterface({
     questions,
     quizTitle,

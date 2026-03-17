@@ -139,7 +139,7 @@ export default function FlashcardInterface({
                         Well Done!
                     </h2>
                     <p className="text-lg text-gray-700 mb-6">
-                        You've reviewed all {initialCardCount} card
+                        You&apos;ve reviewed all {initialCardCount} card
                         {initialCardCount === 1 ? "" : "s"}.
                     </p>
                     <button

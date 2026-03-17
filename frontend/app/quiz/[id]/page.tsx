@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useAuth } from "../../../context/AuthContext";
 import { API_BASE_URL } from "../../../lib/api";
-import StudyModeCard from "../../../components/StudyModeCard";
 import FlashcardInterface from "../../../components/FlashcardInterface";
 import LearnInterface from "../../../components/LearnInterface";
 
@@ -79,10 +78,10 @@ export default function QuizDetailPage() {
                             `HTTP error! status: ${response.status}`
                     );
                 }
-                const data: QuizData = await response.json();
-                setQuizData(data);
-            } catch (err: any) {
-                setError(err.message || "An unexpected error occurred.");
+                const quizJson: QuizData = await response.json();
+                setQuizData(quizJson);
+            } catch (err: unknown) {
+                setError(err instanceof Error ? err.message : "An unexpected error occurred.");
             } finally {
                 setIsLoading(false);
             }
@@ -134,22 +133,6 @@ export default function QuizDetailPage() {
     const closeModal = () => {
         setIsModalOpen(false);
         setActiveStudyMode(null);
-    };
-
-    const flashcardGradient = {
-        from: "from-[#5424a2]", // Your custom purple
-        to: "to-[#1e1b4b]", // Your custom dark indigo/purple
-        hoverFrom: "hover:from-[#6a3bb5]", // Slightly lighter hover
-        hoverTo: "hover:to-[#2f2a6d]", // Slightly lighter hover
-        ring: "purple-400",
-    };
-
-    const learnGradient = {
-        from: "from-[#5424a2]", // Using same gradient for now, can be different
-        to: "to-[#1e1b4b]",
-        hoverFrom: "hover:from-[#6a3bb5]",
-        hoverTo: "hover:to-[#2f2a6d]",
-        ring: "indigo-400",
     };
 
     const handleHostGameClick = async () => {

@@ -26,7 +26,7 @@ export default function RegisterPage() {
         setIsLoading(true);
 
         try {
-            const data = await registerUser(username, password);
+            await registerUser(username, password);
             setSuccessMessage(
                 `Account created successfully! Redirecting to login...`
             );
