@@ -79,8 +79,11 @@ async def get_my_quizzes(
     db: Session = Depends(get_db),
     current_user: models.Profile = Depends(auth.get_current_user)
 ):
-    quizzes = db.query(models.Quiz).filter(models.Quiz.user_id == current_user.id).order_by(models.Quiz.created_at.desc()).all()
-    return quizzes
+    try:
+        quizzes = db.query(models.Quiz).filter(models.Quiz.user_id == current_user.id).order_by(models.Quiz.created_at.desc()).all()
+        return quizzes
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/")
 async def read_root():
