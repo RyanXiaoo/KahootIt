@@ -8,6 +8,7 @@ import React, {
     ReactNode,
 } from "react";
 import { useRouter } from "next/navigation";
+import { validateToken } from "../lib/api";
 
 interface AuthContextType {
     token: string | null;
@@ -30,17 +31,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const router = useRouter();
 
     useEffect(() => {
-        // Check for token in localStorage on initial load
-        try {
-            const storedToken = localStorage.getItem("accessToken");
-            if (storedToken) {
+        const checkToken = async () => {
+            try {
+                const storedToken = localStorage.getItem("accessToken");
+                if (!storedToken) {
+                    setIsLoading(false);
+                    return;
+                }
+                await validateToken(storedToken);
                 setToken(storedToken);
+            } catch {
+                localStorage.removeItem("accessToken");
+            } finally {
+                setIsLoading(false);
             }
-        } catch (error) {
-            console.error("Could not access localStorage:", error);
-            // Handle environments where localStorage is not available or restricted
-        }
-        setIsLoading(false);
+        };
+        checkToken();
     }, []);
 
     const login = (accessToken: string) => {
