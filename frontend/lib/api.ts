@@ -32,6 +32,14 @@ export async function registerUser(username: string, password: string) {
     return response.json();
 }
 
+export async function validateToken(token: string) {
+    const res = await fetch(`${API_BASE_URL}/users/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error("Token invalid");
+    return res.json();
+}
+
 export async function loginUser(username: string, password: string) {
     const formData = new URLSearchParams();
     formData.append("username", username);
