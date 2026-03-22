@@ -8,15 +8,15 @@ import React, {
     ReactNode,
 } from "react";
 import { useRouter } from "next/navigation";
-import { validateToken } from "../lib/api";
+import type { Session } from "@supabase/supabase-js";
+import { supabase } from "../lib/supabase";
 
 interface AuthContextType {
     token: string | null;
     isAuthenticated: boolean;
     isLoading: boolean;
-    login: (accessToken: string) => void;
-    logout: () => void;
-    // You could add user object here later: user: User | null;
+    login: (username: string, password: string) => Promise<void>;
+    logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -26,55 +26,40 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-    const [token, setToken] = useState<string | null>(null);
-    const [isLoading, setIsLoading] = useState(true); // Start with loading true to check localStorage
+    const [session, setSession] = useState<Session | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
     const router = useRouter();
 
     useEffect(() => {
-        const checkToken = async () => {
-            try {
-                const storedToken = localStorage.getItem("accessToken");
-                if (!storedToken) {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+            (event, currentSession) => {
+                setSession(currentSession);
+                if (event === "INITIAL_SESSION") {
                     setIsLoading(false);
-                    return;
                 }
-                await validateToken(storedToken);
-                setToken(storedToken);
-            } catch {
-                localStorage.removeItem("accessToken");
-            } finally {
-                setIsLoading(false);
             }
-        };
-        checkToken();
+        );
+        return () => subscription.unsubscribe();
     }, []);
 
-    const login = (accessToken: string) => {
-        try {
-            localStorage.setItem("accessToken", accessToken);
-            setToken(accessToken);
-            // router.push('/dashboard'); // Or let the calling component handle navigation
-        } catch (error) {
-            console.error("Could not access localStorage:", error);
-        }
+    const login = async (username: string, password: string) => {
+        const { error } = await supabase.auth.signInWithPassword({
+            email: `${username}@kahootit.internal`,
+            password,
+        });
+        if (error) throw new Error(error.message);
     };
 
-    const logout = () => {
-        try {
-            localStorage.removeItem("accessToken");
-            setToken(null);
-            router.push("/"); // Redirect to login page on logout
-        } catch (error) {
-            console.error("Could not access localStorage:", error);
-        }
+    const logout = async () => {
+        await supabase.auth.signOut();
+        router.push("/");
     };
 
-    const isAuthenticated = !!token;
+    const token = session?.access_token ?? null;
+    const isAuthenticated = !!session;
 
     return (
-        <AuthContext.Provider
-            value={{ token, isAuthenticated, isLoading, login, logout }}
-        >
+        <AuthContext.Provider value={{ token, isAuthenticated, isLoading, login, logout }}>
             {children}
         </AuthContext.Provider>
     );

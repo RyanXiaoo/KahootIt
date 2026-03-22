@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { registerUser } from "../../lib/api";
+import { supabase } from "../../lib/supabase";
 
 export default function RegisterPage() {
     const [username, setUsername] = useState("");
@@ -26,11 +26,14 @@ export default function RegisterPage() {
         setIsLoading(true);
 
         try {
-            await registerUser(username, password);
-            setSuccessMessage(
-                `Account created successfully! Redirecting to login...`
-            );
-            // Redirect to login after 2 seconds
+            const { error: signUpError } = await supabase.auth.signUp({
+                email: `${username}@kahootit.internal`,
+                password,
+                options: { data: { username } },
+            });
+            if (signUpError) throw new Error(signUpError.message);
+
+            setSuccessMessage("Account created successfully! Redirecting to login...");
             setTimeout(() => {
                 router.push("/login");
             }, 2000);
@@ -83,7 +86,7 @@ export default function RegisterPage() {
                                 placeholder="Choose a username"
                             />
                         </div>
-                        
+
                         <div>
                             <label
                                 htmlFor="password"
@@ -101,7 +104,7 @@ export default function RegisterPage() {
                                 placeholder="Create a password"
                             />
                         </div>
-                        
+
                         <div>
                             <label
                                 htmlFor="confirmPassword"
@@ -119,7 +122,7 @@ export default function RegisterPage() {
                                 placeholder="Confirm your password"
                             />
                         </div>
-                        
+
                         {error && (
                             <div className="p-3 bg-red-50 border border-red-200 rounded">
                                 <p className="text-red-600 text-sm">{error}</p>
