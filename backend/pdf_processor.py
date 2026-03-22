@@ -153,7 +153,7 @@ The output must be a single JSON object with a "questions" key, where the value 
 
     generated_questions_list = []
     try:
-        model_to_use = "gpt-5-mini"  # Using GPT-4o Mini - fast, cost-effective, and available to all users
+        model_to_use = "gpt-4o-mini"  # Using GPT-4o Mini - fast, cost-effective, and available to all users
         print(f"Using OpenAI model: {model_to_use}")
 
         # Call OpenAI API

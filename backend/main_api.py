@@ -1,4 +1,7 @@
 import os
+from dotenv import load_dotenv
+load_dotenv()
+
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
@@ -18,6 +21,9 @@ import auth
 from auth import get_current_user
 import game_service
 from websocket_manager import socket_app
+
+# Create tables locally (no-op against Supabase PostgreSQL which manages its own schema)
+models.Base.metadata.create_all(bind=engine)
 
 limiter = Limiter(key_func=get_remote_address)
 

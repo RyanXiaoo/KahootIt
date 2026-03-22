@@ -1,13 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useAuth } from "../context/AuthContext";
 
 export default function HomePage() {
     const [pin, setPin] = useState("");
     const [error, setError] = useState("");
     const router = useRouter();
+    const { isAuthenticated, isLoading } = useAuth();
+
+    useEffect(() => {
+        if (!isLoading && isAuthenticated) {
+            router.replace("/my-kahoots");
+        }
+    }, [isLoading, isAuthenticated, router]);
+
+    if (isLoading || isAuthenticated) {
+        return null;
+    }
 
     const handlePinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         // Only allow numbers
