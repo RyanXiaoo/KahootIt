@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { loginUser } from "../../lib/api";
 import { useAuth } from "../../context/AuthContext";
 
 export default function LoginPage() {
@@ -13,7 +12,7 @@ export default function LoginPage() {
     const [isLoading, setIsLoading] = useState(false);
     const router = useRouter();
     const {
-        login: authLogin,
+        login,
         isLoading: authIsLoading,
         isAuthenticated,
     } = useAuth();
@@ -30,10 +29,7 @@ export default function LoginPage() {
         setIsLoading(true);
 
         try {
-            const data = await loginUser(username, password);
-            console.log("Login successful, token:", data.access_token);
-
-            authLogin(data.access_token);
+            await login(username, password);
             router.push("/my-kahoots");
         } catch (err) {
             if (err instanceof Error) {
@@ -92,7 +88,7 @@ export default function LoginPage() {
                                 placeholder="Enter your username"
                             />
                         </div>
-                        
+
                         <div>
                             <label
                                 htmlFor="password"
@@ -110,7 +106,7 @@ export default function LoginPage() {
                                 placeholder="Enter your password"
                             />
                         </div>
-                        
+
                         {error && (
                             <div className="p-3 bg-red-50 border border-red-200 rounded">
                                 <p className="text-red-600 text-sm">{error}</p>
@@ -142,4 +138,3 @@ export default function LoginPage() {
         </main>
     );
 }
-

@@ -20,8 +20,6 @@ psycopg2-binary>=2.9.9
 
 # Authentication
 python-jose[cryptography]>=3.3.0
-passlib>=1.7.4
-bcrypt==3.2.2  # CRITICAL: Pin to 3.2.2 for passlib compatibility (4.0+ breaks passlib)
 
 # WebSocket for real-time multiplayer
 python-socketio>=5.11.0
